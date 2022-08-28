@@ -22,6 +22,8 @@ import io.netty.util.concurrent.FastThreadLocal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import me.videogamesm12.omegatrack.OmegaTrack;
+import me.videogamesm12.omegatrack.command.*;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -56,17 +58,25 @@ public class EpsilonBot {
 	@Getter protected ChatCommandHandler chatCommandHandler = new ChatCommandHandler(this, commandList, Config.getConfig().commandPrefix);
 	@Getter protected BuildHandler buildHandler = new BuildHandler(this);
 	@Getter protected PlayerListTracker playerListTracker = new PlayerListTracker();
+
+	// OmegaTrack start - Necessary hooks to be able to get the bot instance anytime
+	public static EpsilonBot INSTANCE;
+	public static OmegaTrack TRACKER;
+	// OmegaTrack stop
 	
 	public EpsilonBot() {
 		this.host = Config.getConfig().getHost();
 		this.port = Config.getConfig().getPort();
 		loadCommands();
+		INSTANCE = this;
+		TRACKER = new OmegaTrack();
 	}
 	
 	public void start() {
 		getListeners();
 		scheduleTicking();
 		connect();
+		TRACKER.start();
 	}
 	
 	private void connect() {
@@ -287,6 +297,11 @@ public class EpsilonBot {
 		catch (Exception e) {
 			e.printStackTrace();
 		}
+		// OmegaTrack start - save our shit!
+		OmegaTrack.WIRETAP.stop();
+		OmegaTrack.TRACKER.stop();
+		OmegaTrack.STORAGE.interrupt();
+		// OmegaTrack stop
 		executor.shutdownNow();
 	}
 	
@@ -329,6 +344,14 @@ public class EpsilonBot {
 
 		commandList.add(new RestartCommand(this));
 		commandList.add(new StopCommand(this));
+
+		// OmegaTrack start - Command hooks
+		commandList.add(new ResetCommand());
+		commandList.add(new OptInCommand());
+		commandList.add(new OptOutCommand());
+		commandList.add(new WTCommand());
+		commandList.add(new SetOffsetCommand());
+		// OmegaTrack stop
 
 		commandList.loadPermissionsFromFile();
 		commandList.savePermissionsToFile();
