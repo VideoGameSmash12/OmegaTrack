@@ -1,7 +1,5 @@
 package com.github.hhhzzzsss.epsilonbot.mapart;
 
-import com.github.hhhzzzsss.epsilonbot.buildsync.PlotCoord;
-import com.github.hhhzzzsss.epsilonbot.buildsync.PlotManager;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.AllArgsConstructor;
