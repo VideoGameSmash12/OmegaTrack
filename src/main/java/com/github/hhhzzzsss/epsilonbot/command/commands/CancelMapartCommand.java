@@ -49,10 +49,13 @@ public class CancelMapartCommand extends ChatCommand {
                 }
             }
             bot.getBuildHandler().setBuilderSession(null);
-            bot.sendChat("Cancelled current mapart");
+            bot.sendResponse("Cancelled current mapart", sender.getMsgSender());
         } else {
             ArgsParser parser = new ArgsParser(this, args);
             int idx = parser.readInt(true);
+            if (idx <= 0) {
+                throw new CommandException("Index cannot be less than 1");
+            }
             if (idx > bot.getBuildHandler().getMapartQueue().size()) {
                 throw new CommandException("Index is larger than queue size");
             }
@@ -64,7 +67,7 @@ public class CancelMapartCommand extends ChatCommand {
                     break;
                 }
             }
-            bot.sendChat("Removed from queue");
+            bot.sendResponse("Removed from queue", sender.getMsgSender());
         }
     }
 }

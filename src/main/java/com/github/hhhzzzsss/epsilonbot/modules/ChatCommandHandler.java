@@ -10,6 +10,7 @@ import com.github.steveice10.packetlib.packet.Packet;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,13 +19,15 @@ public class ChatCommandHandler implements PacketListener {
 	private final EpsilonBot bot;
 	private final CommandList commandList;
 	@Getter private String prefix;
+	@Getter private ArrayList<String> alternatePrefixes;
+	@Getter private Pattern msgCommandPattern;
 	@Getter private Pattern chatCommandPattern;
 	@Getter private Pattern discordCommandPattern;
 	
-	public ChatCommandHandler(EpsilonBot bot, CommandList commandList, String prefix) {
+	public ChatCommandHandler(EpsilonBot bot, CommandList commandList, String prefix, ArrayList<String> alternatePrefixes) {
 		this.bot = bot;
 		this.commandList = commandList;
-		this.setPrefix(prefix);
+		this.setPrefix(prefix, alternatePrefixes);
 	}
 	
 	public void onPacket(Packet packet) {
@@ -44,7 +47,15 @@ public class ChatCommandHandler implements PacketListener {
 			Matcher m;
 			String command;
 			String args;
-			if ((m = chatCommandPattern.matcher(strMessage)).matches()) {
+			String msgSender = null;
+			if ((m = msgCommandPattern.matcher(strMessage)).matches()) {
+				if (!m.group(2).equals("Freedom")) {
+					return;
+				}
+				msgSender = m.group(1);
+				command = m.group(3);
+				args = m.group(4);
+			} else if ((m = chatCommandPattern.matcher(strMessage)).matches()) {
 				command = m.group(1);
 				args = m.group(2).trim();
 			} else if ((m = discordCommandPattern.matcher(strMessage)).matches()) {
@@ -55,15 +66,19 @@ public class ChatCommandHandler implements PacketListener {
 			}
 			
 			try {
-				runCommand(uuid, command, args);
+				runCommand(uuid, msgSender, command, args);
 			}
 			catch (CommandException e) {
-				bot.sendChat("Error: " + e.getMessage());
+				if (msgSender == null) {
+					bot.sendChat("Error: " + e.getMessage());
+				} else {
+					bot.sendMsg("Error: " + e.getMessage(), msgSender);
+				}
 			}
 		}
 	}
 	
-	public void runCommand(UUID uuid, String commandName, String args) throws CommandException {
+	public void runCommand(UUID uuid, String msgSender, String commandName, String args) throws CommandException {
 		Command command = commandList.get(commandName.toLowerCase());
 		if (command == null) {
 			throw new CommandException("Unknown command: " + commandName);
@@ -83,7 +98,7 @@ public class ChatCommandHandler implements PacketListener {
 			throw new CommandException("You don't have permission to run this command");
 		}
 		
-		((ChatCommand) command).executeChat(new ChatSender(uuid, permission), args);
+		((ChatCommand) command).executeChat(new ChatSender(bot, uuid, msgSender, permission), args);
 	}
 
 	/**
@@ -91,9 +106,16 @@ public class ChatCommandHandler implements PacketListener {
 	 *
 	 * @param prefix The command prefix
 	 */
-	public void setPrefix(String prefix) {
+	public void setPrefix(String prefix, ArrayList<String> alternatePrefixes) {
 		this.prefix = prefix;
-		chatCommandPattern = Pattern.compile(String.format(".*(?: »|:) +%s(\\S+)(.*)?", prefix));
-		discordCommandPattern = Pattern.compile(String.format("\\[Discord\\] .*: %s(\\S+)(.*)?", prefix));
+		this.alternatePrefixes = alternatePrefixes;
+		ArrayList<String> allPrefixes = new ArrayList<>();
+		allPrefixes.add(prefix);
+		allPrefixes.addAll(alternatePrefixes);
+		String prefixMatchingString = String.join("|", allPrefixes);
+
+		msgCommandPattern = Pattern.compile(String.format("\\| (\\S+) \\((.+?)\\) > You: (?:%s)(\\S+)(.*)?", prefixMatchingString));
+		chatCommandPattern = Pattern.compile(String.format(".*(?: »|:) +(?:%s)(\\S+)(.*)?", prefixMatchingString));
+		discordCommandPattern = Pattern.compile(String.format("\\[Discord\\] .*: (?:%s)(\\S+)(.*)?", prefixMatchingString));
 	}
 }

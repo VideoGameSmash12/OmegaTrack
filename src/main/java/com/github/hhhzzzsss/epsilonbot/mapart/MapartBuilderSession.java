@@ -15,11 +15,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.net.URL;
 
 public class MapartBuilderSession extends BuilderSession {
     @Getter URL url;
+    boolean useTransparency;
+    @Getter String requester;
     @Getter int mapIdx;
     int originX;
     int originZ;
@@ -37,6 +40,8 @@ public class MapartBuilderSession extends BuilderSession {
     public MapartBuilderSession(EpsilonBot bot, MapartBuildState state) {
         super(bot);
         this.url = state.url;
+        this.useTransparency = state.useTransparency;
+        this.requester = state.requester;
         this.mapIdx = state.mapIdx;
         this.originX = state.originX;
         this.originZ = state.originZ;
@@ -63,14 +68,16 @@ public class MapartBuilderSession extends BuilderSession {
                 false));
     }
 
-    public MapartBuilderSession(EpsilonBot bot, int mapIdx, URL url, int horizDim, int vertDim, boolean dither) throws IOException {
+    public MapartBuilderSession(EpsilonBot bot, int mapIdx, URL url, int horizDim, int vertDim, boolean dither, boolean useTransparency, String requester) throws IOException {
         super(bot);
         this.url = url;
+        this.useTransparency = useTransparency;
+        this.requester = requester;
         this.mapIdx = mapIdx;
         this.originX = Math.floorDiv(Config.getConfig().getMapartX()+64, 128)*128-64;
         this.originZ = Math.floorDiv(Config.getConfig().getMapartZ()+64, 128)*128-64 + 256*mapIdx - 1;
         this.numTiles = horizDim*vertDim;
-        this.loaderThread = new MapartLoaderThread(url, horizDim, vertDim, dither);
+        this.loaderThread = new MapartLoaderThread(url, horizDim, vertDim, dither, useTransparency);
         this.loaderThread.start();
         bot.sendPacket(new ServerboundSetCarriedItemPacket(0));
         actionQueue.add(new CommandAction(
@@ -155,7 +162,11 @@ public class MapartBuilderSession extends BuilderSession {
 
                 String warpName = Config.getConfig().getWarpName();
                 if (!warpName.equals("")) {
-                    bot.sendChat(String.format("Finished building mapart. Go to /warp %s_%d to collect", warpName, mapIdx));
+                    if (requester == null) {
+                        bot.sendChat(String.format("Finished building mapart. Go to /warp %s_%d to collect", warpName, mapIdx));
+                    } else {
+                        bot.sendCommand(String.format("/mail send %s Finished building your mapart. Go to /warp %s_%d to collect", requester, warpName, mapIdx));
+                    }
                 }
 
                 stop();
@@ -220,18 +231,17 @@ public class MapartBuilderSession extends BuilderSession {
         public final String name;
     }
     private void loadTileBuild(int idx) {
-        boolean empty = true;
+        boolean topEmpty = true;
         for (int y=100; y<=100+maxElevation; y++) {
             for (int x=128*idx; x<128*idx+127; x++) {
                 for (int z = 0; z < 129; z++) {
                     if (bot.getWorld().getBlock(originX+x, y, originZ+z) != 0) {
-                        empty = false;
+                        topEmpty = false;
                     }
                 }
             }
         }
-
-        if (!empty) {
+        if (!topEmpty) {
             actionQueue.add(new CommandAction(
                     String.format("//pos1 %d,%d,%d", originX + 128*idx, 100, originZ),
                     false));
@@ -241,6 +251,30 @@ public class MapartBuilderSession extends BuilderSession {
             actionQueue.add(new CommandAction(
                     "//set air",
                     true));
+        }
+
+        if (useTransparency) {
+            int highestGroundBlock = -1;
+            for (int y = 0; y < 100; y++) {
+                for (int x = 128 * idx; x < 128 * idx + 127; x++) {
+                    for (int z = 0; z < 129; z++) {
+                        if (bot.getWorld().getBlock(originX + x, y, originZ + z) != 0) {
+                            highestGroundBlock = y;
+                        }
+                    }
+                }
+            }
+            if (highestGroundBlock >= 0) {
+                actionQueue.add(new CommandAction(
+                        String.format("//pos1 %d,%d,%d", originX + 128 * idx, 0, originZ),
+                        false));
+                actionQueue.add(new CommandAction(
+                        String.format("//pos2 %d,%d,%d", originX + 128 * idx + 127, highestGroundBlock, originZ + 128),
+                        false));
+                actionQueue.add(new CommandAction(
+                        "//set air",
+                        true));
+            }
         }
 
         for (int x=128*idx; x<128*idx+128; x++) {
@@ -309,6 +343,8 @@ public class MapartBuilderSession extends BuilderSession {
     public void saveCurrentBuildState() {
         MapartBuildState state = new MapartBuildState();
         state.url = this.url;
+        state.useTransparency = this.useTransparency;
+        state.requester = requester;
         state.mapIdx = this.mapIdx;
         state.originX = this.originX;
         state.originZ = this.originZ;
@@ -323,21 +359,20 @@ public class MapartBuilderSession extends BuilderSession {
         }
     }
 
-    // todo
     @Override
-    public void sendStatusMessage() {
-        bot.sendChat("Currently building mapart for: " + url.toString());
+    public void sendStatusMessage(Consumer<? super String> sendFunc) {
+        sendFunc.accept("Currently building mapart for: " + (requester==null ? url.toString() : String.format("[Requested by %s]", requester)));
         if (tileIndex < numTiles) {
             int totalBlocks = 128*129*numTiles;
             int totalProgress = 128*129*tileIndex + tileProgress;
-            bot.sendChat(String.format(
+            sendFunc.accept(String.format(
                     "This mapart requires %d block placements in total, and I've placed about %d of them so far, so I'm about %.2f%% done.",
                     totalBlocks,
                     totalProgress,
                     (double) totalProgress / totalBlocks * 100.0
             ));
         } else {
-            bot.sendChat(String.format(
+            sendFunc.accept(String.format(
                     "I've finished building but I need to double check the mapart for errors. I'm currently checking tile %d/%d.",
                     tileIndex-numTiles+1,
                     numTiles

@@ -44,17 +44,38 @@ public class ChatQueue implements TickListener, PacketListener {
 		}
 	}
 	
-	public static final Pattern chatSplitter = Pattern.compile("\\G\\s*([^\r\n]{1,256}(?=\\s|$)|[^\r\n]{256})");
+	public static final Pattern chatSplitter = Pattern.compile("\\G\\s*([^\\r\\n]{1,256}(?=\\s|$)|[^\\r\\n]{256})");
 	public void sendChat(String chat) {
 		if (chatQueue.size() < maxChatQueue) {
-			chat = stripInvalidChars(chat).trim().replace("§", "&");
+			chat = chat.trim().replace("§", "&");
 			Matcher m = chatSplitter.matcher(chat);
 			while (m.find()) {
-				if (m.group(1).length() <= 256) {
-					chatQueue.add(m.group(1));
+				String chatPiece = stripInvalidChars(m.group(1));
+				if (chatPiece.length() <= 256) {
+					chatQueue.add(chatPiece);
 				} else {
-					chatQueue.add(m.group(1).substring(0, 256));
+					chatQueue.add(chatPiece.substring(0, 256));
 				}
+				System.out.println(m.group(1));
+			}
+		}
+	}
+
+	public void sendMsg(String message, String targetPlayer) {
+		if (chatQueue.size() < maxChatQueue) {
+			message = message.trim().replace("§", "&");
+			String msgPre = String.format("/msg %s ", targetPlayer);
+			int limit = 256-msgPre.length();
+			Pattern msgSplitter = Pattern.compile(String.format("\\G\\s*([^\\r\\n]{1,%d}(?=\\s|$)|[^\\r\\n]{%d})", limit, limit));
+			Matcher m = msgSplitter.matcher(message);
+			while (m.find()) {
+				String chatPiece = msgPre + stripInvalidChars(m.group(1));
+				if (chatPiece.length() <= 256) {
+					chatQueue.add(chatPiece);
+				} else {
+					chatQueue.add(chatPiece.substring(0, 256));
+				}
+				System.out.println(m.group(1));
 			}
 		}
 	}

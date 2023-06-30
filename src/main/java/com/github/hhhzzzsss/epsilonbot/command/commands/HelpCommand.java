@@ -41,7 +41,7 @@ public class HelpCommand extends ChatCommand {
                     sb.append(" " + Config.getConfig().getCommandPrefix() + command.getName());
                 }
             }
-            bot.sendChat(sb.toString());
+            bot.sendResponse(sb.toString(), sender.getMsgSender());
         } else {
             Command command = bot.getCommandList().get(args.split(" ", 2)[0].toLowerCase());
             if (command == null) {
@@ -64,7 +64,10 @@ public class HelpCommand extends ChatCommand {
                     sb.append(String.format("\n%s%s %s", prefix, command.getName(), syntax));
                 }
             }
-            bot.sendChat(sb.toString());
+            if (command.getFlags().length > 0) {
+                sb.append(String.format("\nFlags: %s", String.join(", ", command.getFlags())));
+            }
+            bot.sendResponse(sb.toString(), sender.getMsgSender());
         }
     }
 }

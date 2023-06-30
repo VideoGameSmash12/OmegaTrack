@@ -2,6 +2,7 @@ package com.github.hhhzzzsss.epsilonbot.modules;
 
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.hhhzzzsss.epsilonbot.listeners.*;
+import com.github.steveice10.mc.protocol.data.game.ClientCommand;
 import com.github.steveice10.mc.protocol.data.game.command.CommandNode;
 import com.github.steveice10.mc.protocol.data.game.entity.EntityEvent;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
@@ -14,8 +15,10 @@ import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundCo
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundRespawnPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundEntityEventPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.player.ClientboundSetHealthPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundOpenScreenPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundGameEventPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundClientCommandPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClickPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundSetCarriedItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundUseItemPacket;
@@ -36,6 +39,8 @@ public class StateManager implements PacketListener, TickListener, DisconnectLis
 
 	@Getter @Setter private boolean isTotalFreedom = false;
 	@Getter @Setter private boolean onFreedomServer = false;
+	private long lastTimeOnServer = System.currentTimeMillis();
+	private long nextServerJoinTime = System.currentTimeMillis();
 	
 	@Getter @Setter private boolean autoOp = true;
 	@Getter private boolean opped = true;
@@ -83,6 +88,7 @@ public class StateManager implements PacketListener, TickListener, DisconnectLis
 		}
 		else if (packet instanceof ClientboundCommandsPacket) {
 			ClientboundCommandsPacket t_packet = (ClientboundCommandsPacket) packet;
+			boolean wasOnFreedomServer = onFreedomServer;
 			onFreedomServer = false;
 			for (CommandNode node : t_packet.getNodes()) {
 				if (node.getName() == null) {
@@ -97,6 +103,10 @@ public class StateManager implements PacketListener, TickListener, DisconnectLis
 			}
 
 			if (!isTotalFreedom) onFreedomServer = true;
+
+			if (wasOnFreedomServer && !onFreedomServer) {
+				lastTimeOnServer = System.currentTimeMillis();
+			}
 		} else if (packet instanceof ClientboundOpenScreenPacket) {
 			ClientboundOpenScreenPacket t_packet = (ClientboundOpenScreenPacket) packet;
 			if (!onFreedomServer && t_packet.getName().contains("Server Selector")) {
@@ -109,6 +119,10 @@ public class StateManager implements PacketListener, TickListener, DisconnectLis
 						new ItemStack(0),
 						new TreeMap<>()
 				));
+			}
+		} else if (packet instanceof ClientboundSetHealthPacket) {
+			if (((ClientboundSetHealthPacket) packet).getHealth() <= 0.0) {
+				bot.sendPacket(new ServerboundClientCommandPacket(ClientCommand.RESPAWN));
 			}
 		}
 	}
@@ -128,10 +142,20 @@ public class StateManager implements PacketListener, TickListener, DisconnectLis
 	}
 	
 	public void rectify() {
-		nextRectifyTime = System.currentTimeMillis();
-		if (!onFreedomServer) {
+		long currentTime = System.currentTimeMillis();
+		nextRectifyTime = currentTime;
+		if (!onFreedomServer && currentTime >= nextServerJoinTime) {
 			bot.sendPacket(new ServerboundSetCarriedItemPacket(0));
 			bot.sendPacket(new ServerboundUseItemPacket(Hand.MAIN_HAND));
+			if (currentTime-lastTimeOnServer > 10*1000) {
+				nextServerJoinTime = currentTime + 10*1000;
+			}
+			if (currentTime-lastTimeOnServer > 60*1000) {
+				nextServerJoinTime = currentTime + 60*1000;
+			}
+			if (currentTime-lastTimeOnServer > 5*60*1000) {
+				nextServerJoinTime = currentTime + 5*60*1000;
+			}
 			nextRectifyTime += commandDelay;
 			return;
 		}
