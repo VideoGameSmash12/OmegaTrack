@@ -13,7 +13,7 @@ public class SetOffsetCommand extends ChatCommand
     {
         String[] args = arg.split(" ");
 
-        if (args.length < 1)
+        if (arg.trim().isEmpty())
         {
             throw new CommandException("I need a number, jackass.");
         }
@@ -31,7 +31,7 @@ public class SetOffsetCommand extends ChatCommand
 
         //OmegaTrack.WIRETAP.setCurrentId(number);
         OmegaTrack.WIRETAP.resetBruteforcer(number);
-        EpsilonBot.INSTANCE.sendChat("Okay, reset the grabber to start at #" + number + ".");
+        sender.getBot().sendResponse("Okay, reset the grabber to start at #" + number + ".", sender.getMsgSender());
     }
 
     @Override

@@ -1,6 +1,5 @@
 package me.videogamesm12.omegatrack.command;
 
-import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
@@ -12,9 +11,7 @@ public class ResetCommand extends ChatCommand
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
         OmegaTrack.WIRETAP.resetBruteforcer(0);
-        EpsilonBot.INSTANCE.sendCommand("/w "
-                + sender.getUuid().toString()
-                + " Okay, I've reset the bruteforcer for you.");
+        sender.getBot().sendResponse("Okay, I've reset the bruteforcer for you.", sender.getMsgSender());
     }
 
     @Override

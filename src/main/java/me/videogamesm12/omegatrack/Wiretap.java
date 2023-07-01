@@ -2,8 +2,11 @@ package me.videogamesm12.omegatrack;
 
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
+import com.github.steveice10.mc.protocol.data.game.entity.EntityEvent;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerInfoPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundEntityEventPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddPlayerPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundTagQueryPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundEntityTagQuery;
@@ -41,9 +44,19 @@ public class Wiretap extends SessionAdapter
     //--
     @Getter
     @Setter
-    private int currentId = 0;
+    private int currentTraditionalId = 0;
+    @Getter
+    @Setter
+    private int currentTraditionalBackwardsId = 0;
+    @Getter
+    @Setter
+    private int currentBackwardsId = 0;
+    //--
+    @Getter
+    private int maxId = 0;
     //--
     private Timer bruteTimer = new Timer();
+    private Timer backwardsBruteTimer = new Timer();
 
     public Wiretap()
     {
@@ -104,6 +117,13 @@ public class Wiretap extends SessionAdapter
 
             // Cool, storing that in the list.
             link(myId, EpsilonBot.INSTANCE.getUuid());
+
+            // Is it the newest ID we know?
+            if (myId > maxId)
+            {
+                maxId = myId;
+                resetBackwardsBruteforcer(myId);
+            }
         }
         // Response to queries we made previously
         else if (packet instanceof ClientboundTagQueryPacket tagQuery)
@@ -120,23 +140,86 @@ public class Wiretap extends SessionAdapter
 
             // Refuse to link entities that are already linked somewhere else or have opted out of being tracked
             if (!isLinked(uuid))
+            {
                 link(id, uuid);
+            }
         }
-        // In case someone teleports to the bot and wasn't already on the list...
+        // If a mob despawns and its ID is higher than our known maximum ID, reset the backwards bruteforcer. We use
+        //  this find out what the latest entity ID is when a player joins so that we can index them faster.
+        else if (packet instanceof ClientboundRemoveEntitiesPacket entityRemove)
+        {
+            int maximum = 0;
+
+            for (int id : entityRemove.getEntityIds())
+            {
+                if (id > maximum)
+                {
+                    maximum = id;
+                }
+            }
+
+            if (maximum > maxId)
+            {
+                resetBackwardsBruteforcer(maximum);
+            }
+        }
+        // If a mob dies and its ID is higher than our known maximum ID, reset the backwards bruteforcer. We use this to
+        //  find out what the latest entity ID is when a player joins so that we can index them faster.
+        else if (packet instanceof ClientboundEntityEventPacket entityEvent)
+        {
+            if (entityEvent.getStatus() == EntityEvent.LIVING_DEATH && entityEvent.getEntityId() > maxId)
+            {
+                resetBackwardsBruteforcer(entityEvent.getEntityId());
+            }
+        }
+        /*// If a pig spawns in, assume we spawned it in and reset the backwards bruteforcer. We use this to find out what
+        //  the latest entity ID is when a player joins so that we can index them faster.
+        else if (packet instanceof ClientboundAddEntityPacket entityAdd)
+        {
+            if (entityAdd.getType() == EntityType.PIG && entityAdd.getEntityId() > maxId)
+            {
+                resetBackwardsBruteforcer(entityAdd.getEntityId());
+            }
+        }*/
+        // Link players manually and if their entity ID is larger than the largest known player entity ID, reset the
+        //  backwards bruteforcer.
         else if (packet instanceof ClientboundAddPlayerPacket playerAdd)
         {
-            int id = playerAdd.getEntityId();
-            UUID uuid = playerAdd.getUuid();
+            // Link ourselves because we know our current entity ID
+            if (playerAdd.getUuid().equals(EpsilonBot.INSTANCE.getUuid()))
+            {
+                link(playerAdd.getEntityId(), EpsilonBot.INSTANCE.getUuid());
+                resetBackwardsBruteforcer(playerAdd.getEntityId());
+            }
+            // Manually link the entity ID with the UUID, bypassing brute-forcing attempts entirely
+            else
+            {
+                int id = playerAdd.getEntityId();
+                UUID uuid = playerAdd.getUuid();
 
-            link(id, uuid);
+                link(id, uuid);
+
+                // Reset the backwards bruteforcer if the max ID is less than the ID of the player that teleported to you
+                if (maxId < id)
+                {
+                    maxId = id;
+                    resetBackwardsBruteforcer(id);
+                }
+            }
         }
-        // Unlink players that leave the server
+        // Perform certain actions when a player joins or leaves the server
         else if (packet instanceof ClientboundPlayerInfoPacket playerInfo)
         {
-            if (playerInfo.getAction() == PlayerListEntryAction.REMOVE_PLAYER)
+            // Attempt to find the latest entity ID by spawning in a Pig
+            if (playerInfo.getAction() == PlayerListEntryAction.ADD_PLAYER)
+            {
+                EpsilonBot.INSTANCE.sendCommand("/spawnmob pig 1");
+            }
+            // Unlink players that leave the server
+            else if (playerInfo.getAction() == PlayerListEntryAction.REMOVE_PLAYER)
             {
                 // Get the UUID of the player that left
-                UUID uuid = playerInfo.getEntries()[0].getProfile().getId();
+                final UUID uuid = playerInfo.getEntries()[0].getProfile().getId();
 
                 if (!isLinked(uuid))
                     return;
@@ -174,7 +257,50 @@ public class Wiretap extends SessionAdapter
     }
 
     /**
-     * Resets the bruteforcer
+     * Resets the backwards bruteforcer. This is separate from the traditional brute-forcing methods because the way it
+     *  gets IDs is by listening for relevant entity IDs.
+     */
+    public void resetBackwardsBruteforcer(int myId)
+    {
+        // Cancel any existing operations and kills the original Timer as we can't schedule tasks on timers that had
+        //  `cancel()` called already
+        if (backwardsBruteTimer != null)
+        {
+            backwardsBruteTimer.cancel();
+            backwardsBruteTimer = null;
+        }
+
+        setCurrentBackwardsId(myId);
+
+        // Sets up a new Timer
+        backwardsBruteTimer = new Timer();
+
+        // Backwards bruteforce
+        backwardsBruteTimer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                // Has the account been linked already or opted out of tracking?
+                if (!isLinked(currentBackwardsId))
+                {
+                    doWiretapBruteQuery(currentBackwardsId);
+                }
+
+                if (currentBackwardsId > 0)
+                {
+                    currentBackwardsId--;
+                }
+                else if (currentBackwardsId == 0)
+                {
+                    cancel();
+                }
+            }
+        }, 0, 100);
+    }
+
+    /**
+     * Resets the traditional bruteforcers.
      */
     public void resetBruteforcer(int offset)
     {
@@ -187,10 +313,14 @@ public class Wiretap extends SessionAdapter
         }
 
         // Resets things back from square one
-        setCurrentId(offset);
+        setCurrentTraditionalId(offset);
+        setCurrentTraditionalBackwardsId(offset);
 
         // Sets up a new Timer
         bruteTimer = new Timer();
+
+        // Traditional forwards brute-forcing - This takes the offset and starts brute-forcing entity IDs starting at
+        //  that number. On start-up by default it starts at 0 just in case the server restarted.
         bruteTimer.schedule(new TimerTask()
         {
             @Override
@@ -200,21 +330,40 @@ public class Wiretap extends SessionAdapter
                 //  restarted. Note that getting kicked for any reason would also result in this behavior.
                 if (!EpsilonBot.INSTANCE.getStateManager().isOnFreedomServer())
                 {
-                    currentId = 0;
+                    currentTraditionalId = 0;
                     return;
                 }
 
                 // Wraps shit back
-                if (currentId == Integer.MAX_VALUE)
-                    currentId = 0;
+                if (currentTraditionalId == Integer.MAX_VALUE)
+                    currentTraditionalId = 0;
                 else
-                    currentId++;
+                    currentTraditionalId++;
 
                 // Has the account been linked already or opted out of tracking?
-                if (!isLinked(currentId))
-                    doWiretapBruteQuery(currentId);
+                if (!isLinked(currentTraditionalId))
+                    doWiretapBruteQuery(currentTraditionalId);
             }
-        }, 0, 250);
+        }, 0, 100);
+
+        // Traditional backwards brute-forcing - Usually on start-up this doesn't do anything but if the offset is set
+        //  via the command, this takes the offset and then starts brute-forcing IDs in the opposite direction.
+        bruteTimer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                // Wraps shit back
+                if (currentTraditionalBackwardsId == 0)
+                    cancel();
+                else
+                    currentTraditionalBackwardsId--;
+
+                // Has the account been linked already or opted out of tracking?
+                if (!isLinked(currentTraditionalBackwardsId))
+                    doWiretapBruteQuery(currentTraditionalBackwardsId);
+            }
+        }, 0, 100);
     }
 
     public boolean isLinked(UUID uuid)

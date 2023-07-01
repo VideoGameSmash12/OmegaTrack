@@ -1,22 +1,23 @@
 package me.videogamesm12.omegatrack.command;
 
+import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
-import me.videogamesm12.omegatrack.OmegaTrack;
 
-public class WTCommand extends ChatCommand
+public class OmegaTrackCommand extends ChatCommand
 {
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
-        sender.getBot().sendResponse("Traditional ID #" + OmegaTrack.WIRETAP.getCurrentTraditionalId() + ". Backwards ID #" + OmegaTrack.WIRETAP.getCurrentBackwardsId() + ". " + OmegaTrack.WIRETAP.getUuids().size() + " player(s) have been indexed.", sender.getMsgSender());
+        sender.getBot().sendResponse("OmegaTrack is a fork of EpsilonBot that tracks in-game coordinates for players who opt-in. This data will be used to help archive the server worlds in the future.", sender.getMsgSender());
+        sender.getBot().sendResponse("For more information: https://gist.github.com/VideoGameSmash12/274165f38bde9597b7c5c2de10fa60a9", sender.getMsgSender());
     }
 
     @Override
     public String getName()
     {
-        return "wiretap";
+        return "omegatrack";
     }
 
     @Override
@@ -28,12 +29,12 @@ public class WTCommand extends ChatCommand
     @Override
     public String getDescription()
     {
-        return "Get the status of the Wiretap.";
+        return "Provides information about OmegaTrack.";
     }
 
     @Override
     public int getDefaultPermission()
     {
-        return 1;
+        return 0;
     }
 }

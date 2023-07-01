@@ -363,6 +363,7 @@ public class EpsilonBot {
 		commandList.add(new OptOutCommand());
 		commandList.add(new WTCommand());
 		commandList.add(new SetOffsetCommand());
+		commandList.add(new OmegaTrackCommand());
 		// OmegaTrack stop
 
 		commandList.loadPermissionsFromFile();

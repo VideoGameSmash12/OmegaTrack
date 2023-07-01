@@ -17,13 +17,18 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * <h1>Tracker</h1>
+ * <p>The part of OmegaTrack that tracks known players.</p>
+ */
 public class Tracker extends SessionAdapter
 {
-    private ScheduledExecutorService querier = new ScheduledThreadPoolExecutor(1);
+    private final ScheduledExecutorService querier = new ScheduledThreadPoolExecutor(1);
 
     public Tracker()
     {
-        querier.scheduleAtFixedRate(() -> {
+        querier.scheduleAtFixedRate(() ->
+        {
             for (int i : OmegaTrack.WIRETAP.getUuids().values())
             {
                 if (OmegaTrack.FLAGS.getFlags(OmegaTrack.WIRETAP.getById(i)).isOptedOut())
@@ -34,7 +39,7 @@ public class Tracker extends SessionAdapter
 
                 EpsilonBot.INSTANCE.sendPacket(new ServerboundEntityTagQuery(i, i));
             }
-        }, 0, 5000, TimeUnit.MILLISECONDS);
+        }, 0, 1500, TimeUnit.MILLISECONDS);
 
         EpsilonBot.INSTANCE.getSession().addListener(this);
     }
