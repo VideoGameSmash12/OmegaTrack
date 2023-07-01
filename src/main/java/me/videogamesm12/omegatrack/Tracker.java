@@ -39,7 +39,7 @@ public class Tracker extends SessionAdapter
 
                 EpsilonBot.INSTANCE.sendPacket(new ServerboundEntityTagQuery(i, i));
             }
-        }, 0, 1500, TimeUnit.MILLISECONDS);
+        }, 0, 3000, TimeUnit.MILLISECONDS);
 
         EpsilonBot.INSTANCE.getSession().addListener(this);
     }

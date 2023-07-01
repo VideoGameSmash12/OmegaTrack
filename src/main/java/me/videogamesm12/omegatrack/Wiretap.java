@@ -210,9 +210,18 @@ public class Wiretap extends SessionAdapter
         // Perform certain actions when a player joins or leaves the server
         else if (packet instanceof ClientboundPlayerInfoPacket playerInfo)
         {
-            // Attempt to find the latest entity ID by spawning in a Pig
+            // Begin tracking the player and notify them of such if they opted in
             if (playerInfo.getAction() == PlayerListEntryAction.ADD_PLAYER)
             {
+                final UUID uuid = playerInfo.getEntries()[0].getProfile().getId();
+
+                // If they are opted-in, remind them that this is the case.
+                if (!(OmegaTrack.FLAGS.getFlags(uuid).isOptedOut()))
+                {
+                    EpsilonBot.INSTANCE.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to being tracked by OmegaTrack. If you wish for this to stop, use the command !optout.");
+                }
+
+                // Attempt to find the latest entity ID by spawning in a Pig
                 EpsilonBot.INSTANCE.sendCommand("/spawnmob pig 1");
             }
             // Unlink players that leave the server
@@ -287,10 +296,12 @@ public class Wiretap extends SessionAdapter
                     doWiretapBruteQuery(currentBackwardsId);
                 }
 
+                // Decrement the ID for the next query if it's above 0
                 if (currentBackwardsId > 0)
                 {
                     currentBackwardsId--;
                 }
+                // We've brute-forced as much as we could in this manner.
                 else if (currentBackwardsId == 0)
                 {
                     cancel();
