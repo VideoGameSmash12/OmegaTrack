@@ -37,9 +37,6 @@ public class OTFlags
         return new OTFlags();
     }
 
-    //--
-    @Getter
-    private long currentId = 0;
     private final Map<UUID, UserFlags> userFlags = new HashMap<>();
 
     @NotNull
@@ -49,11 +46,6 @@ public class OTFlags
             userFlags.put(uuid, new UserFlags());
 
         return userFlags.get(uuid);
-    }
-
-    public long getAndIncrementCurrentId()
-    {
-        return currentId++;
     }
 
     public void save()
@@ -73,7 +65,7 @@ public class OTFlags
     @Data
     public static class UserFlags
     {
-        private boolean optedOut = false;
+        private boolean optedOut = true;
         private boolean dontMsg = false;
     }
 }

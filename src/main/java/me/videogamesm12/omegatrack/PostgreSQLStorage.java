@@ -98,14 +98,13 @@ public class PostgreSQLStorage extends Thread
     private void addSet(@NotNull PositionDataset set) throws SQLException
     {
         PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO coordinates (id, uuid, world, time, x, z) VALUES (?, ?, ?, ?, ?, ?)");
+                "INSERT INTO coordinates (uuid, world, time, x, z) VALUES (?, ?, ?, ?, ?)");
         //--
-        statement.setLong(1, OmegaTrack.FLAGS.getAndIncrementCurrentId());
-        statement.setString(2, set.getUuid().toString());
-        statement.setString(3, set.getWorld());
-        statement.setLong(4, set.getTime());
-        statement.setDouble(5, set.getX());
-        statement.setDouble(6, set.getZ());
+        statement.setString(1, set.getUuid().toString());
+        statement.setString(2, set.getWorld());
+        statement.setLong(3, set.getTime());
+        statement.setDouble(4, set.getX());
+        statement.setDouble(5, set.getZ());
         //--
         System.out.println("Executing update");
         statement.executeUpdate();
