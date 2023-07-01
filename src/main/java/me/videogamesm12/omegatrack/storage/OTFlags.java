@@ -67,5 +67,6 @@ public class OTFlags
     {
         private boolean optedOut = true;
         private boolean dontMsg = false;
+        private boolean supposedToShutUp = false;
     }
 }

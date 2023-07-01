@@ -15,6 +15,7 @@ import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import com.github.steveice10.packetlib.packet.Packet;
 import lombok.Getter;
 import lombok.Setter;
+import me.videogamesm12.omegatrack.storage.OTFlags;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
 
 import java.util.*;
@@ -72,7 +73,7 @@ public class Wiretap extends SessionAdapter
             }
         }, 0, 100, TimeUnit.MILLISECONDS);
 
-        // Slightly throttled compared to the regular `out`, but this is to avoid spamfucking the server with possbly
+        // Slightly throttled compared to the regular `out`, but this is to avoid spamfucking the server with possibly
         //  thousands of requests per second.
         outBrute.scheduleAtFixedRate(() -> {
             for (int i = 0; i < outBruteQueue.size(); i++)
@@ -214,15 +215,22 @@ public class Wiretap extends SessionAdapter
             if (playerInfo.getAction() == PlayerListEntryAction.ADD_PLAYER)
             {
                 final UUID uuid = playerInfo.getEntries()[0].getProfile().getId();
+                final OTFlags.UserFlags flags = OmegaTrack.FLAGS.getFlags(uuid);
 
-                // If they are opted-in, remind them that this is the case.
-                if (!(OmegaTrack.FLAGS.getFlags(uuid).isOptedOut()))
+                // If they are opted-in...
+                if (!flags.isOptedOut())
                 {
-                    EpsilonBot.INSTANCE.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to being tracked by OmegaTrack. If you wish for this to stop, use the command !optout.");
-                }
+                    // Remind them that this is the case
+                    if (!flags.isSupposedToShutUp())
+                    {
+                        EpsilonBot.INSTANCE.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to "
+                                + "being tracked by OmegaTrack. If you wish for this to stop, use the command !optout. "
+                                + "To disable messages like these, use the !stfu command.");
+                    }
 
-                // Attempt to find the latest entity ID by spawning in a Pig
-                EpsilonBot.INSTANCE.sendCommand("/spawnmob pig 1");
+                    // Attempt to find the latest entity ID by spawning in a Pig
+                    EpsilonBot.INSTANCE.sendCommand("/spawnmob pig 1");
+                }
             }
             // Unlink players that leave the server
             else if (playerInfo.getAction() == PlayerListEntryAction.REMOVE_PLAYER)

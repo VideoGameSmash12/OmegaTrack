@@ -66,7 +66,7 @@ public class PostgreSQLStorage extends Thread
                     ex.printStackTrace();
                 }
             }
-        }, 0, 250, TimeUnit.MILLISECONDS);
+        }, 0, 100, TimeUnit.MILLISECONDS);
     }
 
     @Override
