@@ -297,7 +297,7 @@ public class EpsilonBot {
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		// OmegaTrack start - save our shit!
+		// OmegaTrack start - save what we have!
 		OmegaTrack.WIRETAP.stop();
 		OmegaTrack.TRACKER.stop();
 		OmegaTrack.STORAGE.interrupt();
@@ -365,6 +365,7 @@ public class EpsilonBot {
 		commandList.add(new SetOffsetCommand());
 		commandList.add(new OmegaTrackCommand());
 		commandList.add(new STFUCommand());
+		commandList.add(new AmIIndexedCommand());
 		// OmegaTrack stop
 
 		commandList.loadPermissionsFromFile();

@@ -73,7 +73,7 @@ public class Wiretap extends SessionAdapter
             }
         }, 0, 100, TimeUnit.MILLISECONDS);
 
-        // Slightly throttled compared to the regular `out`, but this is to avoid spamfucking the server with possibly
+        // Slightly throttled compared to the regular `out`, but this is to avoid spamming the server with possibly
         //  thousands of requests per second.
         outBrute.scheduleAtFixedRate(() -> {
             for (int i = 0; i < outBruteQueue.size(); i++)
@@ -353,7 +353,7 @@ public class Wiretap extends SessionAdapter
                     return;
                 }
 
-                // Wraps shit back
+                // Wraps back
                 if (currentTraditionalId == Integer.MAX_VALUE)
                     currentTraditionalId = 0;
                 else
@@ -372,7 +372,7 @@ public class Wiretap extends SessionAdapter
             @Override
             public void run()
             {
-                // Wraps shit back
+                // Wraps back
                 if (currentTraditionalBackwardsId == 0)
                     cancel();
                 else

@@ -26,7 +26,7 @@ public class SetOffsetCommand extends ChatCommand
         }
         catch (Exception ex)
         {
-            throw new CommandException("Did you forget what the fuck a number was? Because '" + args[0] + " sure as hell isn't a number");
+            throw new CommandException("Did you forget what a number was? Because '" + args[0] + " sure as heck isn't a number");
         }
 
         //OmegaTrack.WIRETAP.setCurrentId(number);

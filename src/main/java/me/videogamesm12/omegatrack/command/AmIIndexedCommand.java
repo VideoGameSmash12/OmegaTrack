@@ -7,24 +7,26 @@ import me.videogamesm12.omegatrack.OmegaTrack;
 
 import java.util.UUID;
 
-public class OptInCommand extends ChatCommand
+public class AmIIndexedCommand extends ChatCommand
 {
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
         if (sender.getUuid().equals(UUID.fromString("00000000-0000-0000-0000-000000000000")))
         {
-            throw new CommandException("You must be in-game to opt-in.");
+            throw new CommandException("Non-players are not indexed by default.");
         }
 
-        OmegaTrack.FLAGS.getFlags(sender.getUuid()).setOptedOut(false);
-        sender.getBot().sendResponse("You will now be tracked by OmegaTrack. To start being tracked immediately, teleport to me or reconnect.", sender.getMsgSender());
+        final String result = OmegaTrack.WIRETAP.getUuids().containsKey(sender.getUuid()) ?
+                "Yes, you are indexed." : "No, you are not currently indexed.";
+
+        sender.getBot().sendResponse(result, sender.getMsgSender());
     }
 
     @Override
     public String getName()
     {
-        return "optin";
+        return "isindexed";
     }
 
     @Override
@@ -36,7 +38,7 @@ public class OptInCommand extends ChatCommand
     @Override
     public String getDescription()
     {
-        return "Marks the player as someone who wishes to be tracked";
+        return "Returns whether or not you are indexed currently.";
     }
 
     @Override

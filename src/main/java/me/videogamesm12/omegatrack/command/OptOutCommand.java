@@ -19,16 +19,20 @@ public class OptOutCommand extends ChatCommand
         }
 
         OmegaTrack.FLAGS.getFlags(sender.getUuid()).setOptedOut(true);
+
         try
         {
+            sender.getBot().sendCommand("/tell " + sender.getMsgSender() + " Deleting coordinate data connected to you...");
             OmegaTrack.STORAGE.dropCoordinatesByUuid(sender.getUuid());
         }
         catch (SQLException e)
         {
+            sender.getBot().sendCommand("/tell " + sender.getMsgSender() + " There was a problem whilst trying to delete coordinate data connected to you. Please contact the maintainer of this bot (videogamesm12) &oimmediately&f.");
             e.printStackTrace();
         }
+
         OmegaTrack.WIRETAP.unlink(sender.getUuid());
-        sender.getBot().sendResponse("Got it, you will no longer be tracked by OmegaTrack.", sender.getMsgSender());
+        sender.getBot().sendResponse("You will no longer be tracked by OmegaTrack.", sender.getMsgSender());
     }
 
     @Override
