@@ -16,8 +16,14 @@ public class OTFlags
 {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static File STORAGE = new File("flags.json");
+    private final EpsilonBot epsilonBot;
 
-    public static OTFlags load()
+    public OTFlags(final EpsilonBot epsilonBot)
+    {
+        this.epsilonBot = epsilonBot;
+    }
+
+    public static OTFlags load(final EpsilonBot epsilonBot)
     {
         if (STORAGE.exists())
         {
@@ -31,7 +37,7 @@ public class OTFlags
             }
         }
 
-        return new OTFlags();
+        return new OTFlags(epsilonBot);
     }
 
     private final Map<UUID, UserFlags> userFlags = new HashMap<>();
@@ -54,8 +60,8 @@ public class OTFlags
         catch (Exception ex)
         {
             ex.printStackTrace();
-            EpsilonBot.INSTANCE.getChatLogger().log("Here's what was in memory that couldn't be saved:");
-            EpsilonBot.INSTANCE.getChatLogger().log(GSON.toJson(this));
+            this.epsilonBot.getChatLogger().log("Here's what was in memory that couldn't be saved:");
+            this.epsilonBot.getChatLogger().log(GSON.toJson(this));
         }
     }
 

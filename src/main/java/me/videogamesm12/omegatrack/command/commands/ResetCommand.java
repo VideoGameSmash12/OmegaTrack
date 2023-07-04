@@ -1,22 +1,28 @@
-package me.videogamesm12.omegatrack.command;
+package me.videogamesm12.omegatrack.command.commands;
 
-import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import me.videogamesm12.omegatrack.OmegaTrack;
+import me.videogamesm12.omegatrack.command.AbstractOmegaTrackCommand;
 
-public class WTCommand extends ChatCommand
+public class ResetCommand extends AbstractOmegaTrackCommand
 {
+    public ResetCommand(final OmegaTrack omegaTrack)
+    {
+        super(omegaTrack);
+    }
+
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
-        sender.getBot().sendResponse("Traditional ID #" + OmegaTrack.WIRETAP.getCurrentTraditionalId() + ". Backwards ID #" + OmegaTrack.WIRETAP.getCurrentBackwardsId() + ". " + OmegaTrack.WIRETAP.getUuids().size() + " player(s) have been indexed.", sender.getMsgSender());
+        this.omegaTrack.wiretap.resetBruteforcer(0);
+        sender.getBot().sendResponse("Okay, I've reset the bruteforcer for you.", sender.getMsgSender());
     }
 
     @Override
     public String getName()
     {
-        return "wiretap";
+        return "reset";
     }
 
     @Override
@@ -28,7 +34,7 @@ public class WTCommand extends ChatCommand
     @Override
     public String getDescription()
     {
-        return "Get the status of the Wiretap.";
+        return "Resets the bruteforcer back to the currently set offset.";
     }
 
     @Override

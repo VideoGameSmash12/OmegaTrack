@@ -1,5 +1,7 @@
 package me.videogamesm12.omegatrack;
 
+import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
+import me.videogamesm12.omegatrack.exception.StartFailureException;
 import me.videogamesm12.omegatrack.storage.OTFlags;
 
 import java.util.Timer;
@@ -10,32 +12,35 @@ import java.util.Timer;
  */
 public class OmegaTrack
 {
-    public static Tracker TRACKER;
-    public static Wiretap WIRETAP;
-    public static PostgreSQLStorage STORAGE;
+    public final Tracker tracker;
+    public final Wiretap wiretap;
+    public final PostgreSQLStorage storage;
     //--
-    public static OTFlags FLAGS;
-    public static final Timer TIMER = new Timer();
+    public final OTFlags flags;
+    public final EpsilonBot epsilonBot;
+    public final Timer timer = new Timer();
 
-    public void start()
-    {
-        FLAGS = OTFlags.load();
+    public OmegaTrack(final EpsilonBot epsilonBot) throws StartFailureException {
+        this.epsilonBot = epsilonBot;
+        this.flags = OTFlags.load(this.epsilonBot);
         try
         {
-            STORAGE = new PostgreSQLStorage(TIMER);
+            this.storage = new PostgreSQLStorage(this.timer);
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
+            throw new StartFailureException(ex);
         }
-        WIRETAP = new Wiretap(TIMER);
-        TRACKER = new Tracker(TIMER);
+        this.wiretap = new Wiretap(this);
+        this.tracker = new Tracker(this);
     }
 
-    public void stop()
-    {
-        WIRETAP = null;
-        STORAGE = null;
-        TRACKER = null;
+    public void start() {
+        this.wiretap.start();
+        this.tracker.start();
+    }
+
+    public void stop() {
+        this.timer.cancel();
     }
 }

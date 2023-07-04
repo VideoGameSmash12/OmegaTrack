@@ -2,7 +2,6 @@ package me.videogamesm12.omegatrack;
 
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundTagQueryPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundEntityTagQuery;
 import com.github.steveice10.opennbt.tag.builtin.DoubleTag;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
@@ -12,7 +11,6 @@ import me.videogamesm12.omegatrack.tasks.tracker.TrackerTask;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>Tracker</h1>
@@ -20,14 +18,22 @@ import java.util.concurrent.TimeUnit;
  */
 public class Tracker extends SessionAdapter
 {
+    private final OmegaTrack omegaTrack;
+    private final EpsilonBot epsilonBot;
     private final TrackerTask trackerTask;
+    private final Timer timer;
 
-    public Tracker(final Timer timer)
+    public Tracker(final OmegaTrack omegaTrack)
     {
-        this.trackerTask = new TrackerTask();
-        timer.scheduleAtFixedRate(this.trackerTask, 0, 3000);
+        this.omegaTrack = omegaTrack;
+        this.timer = this.omegaTrack.timer;
+        this.epsilonBot = this.omegaTrack.epsilonBot;
+        this.trackerTask = new TrackerTask(this.omegaTrack);
+    }
 
-        EpsilonBot.INSTANCE.getSession().addListener(this);
+    public void start() {
+        this.epsilonBot.getSession().addListener(this);
+        this.timer.scheduleAtFixedRate(this.trackerTask, 0, 3000);
     }
 
     @Override
@@ -47,7 +53,7 @@ public class Tracker extends SessionAdapter
                 uuid = UUIDUtil.fromIntArray((int[]) uuidObject);
             }
 
-            if (OmegaTrack.FLAGS.getFlags(uuid).isOptedOut())
+            if (this.omegaTrack.flags.getFlags(uuid).isOptedOut())
                 return;
 
             String world = (String) queryPacket.getNbt().get("Dimension").getValue();
@@ -61,7 +67,7 @@ public class Tracker extends SessionAdapter
             System.out.println("Sending " + uuid + " to database");
             try
             {
-                OmegaTrack.STORAGE.queue(new PositionDataset(uuid, world, doubles.get(0).getValue(), doubles.get(2).getValue()));
+                this.omegaTrack.storage.queue(new PositionDataset(uuid, world, doubles.get(0).getValue(), doubles.get(2).getValue()));
             }
             catch (Throwable ex)
             {

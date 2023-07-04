@@ -1,17 +1,17 @@
 package me.videogamesm12.omegatrack.tasks.wiretap;
 
-import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.steveice10.packetlib.packet.Packet;
+import me.videogamesm12.omegatrack.Wiretap;
 
 import java.util.Queue;
-import java.util.TimerTask;
 
-public class WiretapTask extends TimerTask
+public class PacketSenderTask extends AbstractWiretapDependentTask
 {
     private final Queue<Packet> associatedPacketQueue;
 
-    public WiretapTask(final Queue<Packet> associatedPacketQueue)
+    public PacketSenderTask(final Wiretap wiretap, final Queue<Packet> associatedPacketQueue)
     {
+        super(wiretap);
         this.associatedPacketQueue = associatedPacketQueue;
     }
 
@@ -20,10 +20,10 @@ public class WiretapTask extends TimerTask
     {
         for (int i = 0; i < this.associatedPacketQueue.size(); i++)
         {
-            if (!EpsilonBot.INSTANCE.getStateManager().isOnFreedomServer())
+            if (!this.epsilonBot.getStateManager().isOnFreedomServer())
                 break;
 
-            EpsilonBot.INSTANCE.sendPacket(this.associatedPacketQueue.poll());
+            this.epsilonBot.sendPacket(this.associatedPacketQueue.poll());
         }
     }
 }

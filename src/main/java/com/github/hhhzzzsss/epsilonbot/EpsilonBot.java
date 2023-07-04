@@ -23,7 +23,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import me.videogamesm12.omegatrack.OmegaTrack;
-import me.videogamesm12.omegatrack.command.*;
+import me.videogamesm12.omegatrack.command.commands.*;
+import me.videogamesm12.omegatrack.exception.StartFailureException;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -60,23 +61,29 @@ public class EpsilonBot {
 	@Getter protected PlayerListTracker playerListTracker = new PlayerListTracker();
 
 	// OmegaTrack start - Necessary hooks to be able to get the bot instance anytime
-	public static EpsilonBot INSTANCE;
-	public static OmegaTrack TRACKER;
+	public OmegaTrack omegaTrack;
 	// OmegaTrack stop
 	
 	public EpsilonBot() {
 		this.host = Config.getConfig().getHost();
 		this.port = Config.getConfig().getPort();
+		try
+		{
+			this.omegaTrack = new OmegaTrack(this);
+		} catch (StartFailureException e)
+		{
+			System.err.println("Failed to load OmegaTrack");
+			e.printStackTrace();
+		}
 		loadCommands();
-		INSTANCE = this;
-		TRACKER = new OmegaTrack();
 	}
 	
 	public void start() {
 		getListeners();
 		scheduleTicking();
 		connect();
-		TRACKER.start();
+
+		if (this.omegaTrack != null) this.omegaTrack.start();
 	}
 	
 	private void connect() {
@@ -298,9 +305,7 @@ public class EpsilonBot {
 			e.printStackTrace();
 		}
 		// OmegaTrack start - save what we have!
-		OmegaTrack.WIRETAP.stop();
-		OmegaTrack.TRACKER.stop();
-		OmegaTrack.STORAGE.interrupt();
+		if (this.omegaTrack != null) this.omegaTrack.stop();
 		// OmegaTrack stop
 		executor.shutdownNow();
 	}
@@ -358,14 +363,17 @@ public class EpsilonBot {
 		commandList.add(new StopCommand(this));
 
 		// OmegaTrack start - Command hooks
-		commandList.add(new ResetCommand());
-		commandList.add(new OptInCommand());
-		commandList.add(new OptOutCommand());
-		commandList.add(new WTCommand());
-		commandList.add(new SetOffsetCommand());
-		commandList.add(new OmegaTrackCommand());
-		commandList.add(new STFUCommand());
-		commandList.add(new AmIIndexedCommand());
+		if (this.omegaTrack != null)
+		{
+			commandList.add(new ResetCommand(this.omegaTrack));
+			commandList.add(new OptInCommand(this.omegaTrack));
+			commandList.add(new OptOutCommand(this.omegaTrack));
+			commandList.add(new WTCommand(this.omegaTrack));
+			commandList.add(new SetOffsetCommand(this.omegaTrack));
+			commandList.add(new OmegaTrackCommand()); // This one doesn't depend on OmegaTrack, so it is just a regular Epsilon ChatCommand
+			commandList.add(new STFUCommand(this.omegaTrack));
+			commandList.add(new AmIIndexedCommand(this.omegaTrack));
+		}
 		// OmegaTrack stop
 
 		commandList.loadPermissionsFromFile();

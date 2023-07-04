@@ -19,12 +19,11 @@ import me.videogamesm12.omegatrack.storage.OTFlags;
 import me.videogamesm12.omegatrack.tasks.wiretap.BackwardsTimerTask;
 import me.videogamesm12.omegatrack.tasks.wiretap.TraditionalBackwardsTimerTask;
 import me.videogamesm12.omegatrack.tasks.wiretap.TraditionalTimerTask;
-import me.videogamesm12.omegatrack.tasks.wiretap.WiretapTask;
+import me.videogamesm12.omegatrack.tasks.wiretap.PacketSenderTask;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>Wiretap</h1>
@@ -36,6 +35,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class Wiretap extends SessionAdapter
 {
+    private final OmegaTrack omegaTrack;
+    @Getter
+    private final EpsilonBot epsilonBot;
     @Getter
     private final Map<UUID, Integer> uuids = new HashMap<>();
     //--
@@ -62,20 +64,24 @@ public class Wiretap extends SessionAdapter
     private TimerTask traditionalBackwardsTimerTask;
     private TimerTask traditionalTimerTask;
 
-    public Wiretap(final Timer timer)
+    public void start()
     {
-        this.timer = timer;
-        EpsilonBot.INSTANCE.getSession().addListener(this);
-
-        this.regularTimerTask = new WiretapTask(this.outQueue);
-        timer.scheduleAtFixedRate(this.regularTimerTask, 0, 100);
+        this.epsilonBot.getSession().addListener(this);
+        this.timer.scheduleAtFixedRate(this.regularTimerTask, 0, 100);
         // Slightly throttled compared to the regular `out`, but this is to avoid spamming the server with possibly
         //  thousands of requests per second.
-        this.bruteForceTimerTask = new WiretapTask(this.outBruteQueue);
-        timer.scheduleAtFixedRate(this.bruteForceTimerTask, 0, 333);
-
+        this.timer.scheduleAtFixedRate(this.bruteForceTimerTask, 0, 333);
         // Sets up the bruteforcer.
         resetBruteforcer(0);
+    }
+
+    public Wiretap(final OmegaTrack omegaTrack)
+    {
+        this.omegaTrack = omegaTrack;
+        this.timer = this.omegaTrack.timer;
+        this.epsilonBot = this.omegaTrack.epsilonBot;
+        this.regularTimerTask = new PacketSenderTask(this,this.outQueue);
+        this.bruteForceTimerTask = new PacketSenderTask(this, this.outBruteQueue);
     }
 
     public void stop()
@@ -114,7 +120,7 @@ public class Wiretap extends SessionAdapter
             int myId = login.getEntityId();
 
             // Cool, storing that in the list.
-            link(myId, EpsilonBot.INSTANCE.getUuid());
+            link(myId, this.epsilonBot.getUuid());
 
             // Is it the newest ID we know?
             if (myId > maxId)
@@ -192,9 +198,9 @@ public class Wiretap extends SessionAdapter
         else if (packet instanceof ClientboundAddPlayerPacket playerAdd)
         {
             // Link ourselves because we know our current entity ID
-            if (playerAdd.getUuid().equals(EpsilonBot.INSTANCE.getUuid()))
+            if (playerAdd.getUuid().equals(this.epsilonBot.getUuid()))
             {
-                link(playerAdd.getEntityId(), EpsilonBot.INSTANCE.getUuid());
+                link(playerAdd.getEntityId(), this.epsilonBot.getUuid());
                 resetBackwardsBruteforcer(playerAdd.getEntityId());
             }
             // Manually link the entity ID with the UUID, bypassing brute-forcing attempts entirely
@@ -220,7 +226,7 @@ public class Wiretap extends SessionAdapter
             if (playerInfo.getAction() == PlayerListEntryAction.ADD_PLAYER)
             {
                 final UUID uuid = playerInfo.getEntries()[0].getProfile().getId();
-                final OTFlags.UserFlags flags = OmegaTrack.FLAGS.getFlags(uuid);
+                final OTFlags.UserFlags flags = this.omegaTrack.flags.getFlags(uuid);
 
                 // If they are opted-in...
                 if (!flags.isOptedOut())
@@ -228,13 +234,13 @@ public class Wiretap extends SessionAdapter
                     // Remind them that this is the case
                     if (!flags.isSupposedToShutUp())
                     {
-                        EpsilonBot.INSTANCE.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to "
+                        this.epsilonBot.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to "
                                 + "being tracked by OmegaTrack. If you wish for this to stop, use the command !optout. "
                                 + "To disable messages like these, use the !stfu command.");
                     }
 
                     // Attempt to find the latest entity ID by spawning in a Pig
-                    EpsilonBot.INSTANCE.sendCommand("/spawnmob pig 1");
+                    this.epsilonBot.sendCommand("/spawnmob pig 1");
                 }
             }
             // Unlink players that leave the server
@@ -349,7 +355,7 @@ public class Wiretap extends SessionAdapter
      */
     public void link(int id, UUID uuid)
     {
-        if (OmegaTrack.FLAGS.getFlags(uuid).isOptedOut())
+        if (this.omegaTrack.flags.getFlags(uuid).isOptedOut())
             return;
 
         uuids.put(uuid, id);

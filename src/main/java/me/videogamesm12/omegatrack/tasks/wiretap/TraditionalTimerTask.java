@@ -15,7 +15,7 @@ public class TraditionalTimerTask extends AbstractWiretapDependentTask
     {
         // If we aren't on the server, let's go ahead and reset everything to 0 just in case the server
         //  restarted. Note that getting kicked for any reason would also result in this behavior.
-        if (!EpsilonBot.INSTANCE.getStateManager().isOnFreedomServer())
+        if (!this.epsilonBot.getStateManager().isOnFreedomServer())
         {
             this.wiretap.currentTraditionalId = 0;
             return;

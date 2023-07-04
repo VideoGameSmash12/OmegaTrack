@@ -1,12 +1,18 @@
-package me.videogamesm12.omegatrack.command;
+package me.videogamesm12.omegatrack.command.commands;
 
 import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import me.videogamesm12.omegatrack.OmegaTrack;
+import me.videogamesm12.omegatrack.command.AbstractOmegaTrackCommand;
 
-public class SetOffsetCommand extends ChatCommand
+public class SetOffsetCommand extends AbstractOmegaTrackCommand
 {
+    public SetOffsetCommand(final OmegaTrack omegaTrack)
+    {
+        super(omegaTrack);
+    }
+
     @Override
     public void executeChat(ChatSender sender, String arg) throws CommandException
     {
@@ -29,7 +35,7 @@ public class SetOffsetCommand extends ChatCommand
         }
 
         //OmegaTrack.WIRETAP.setCurrentId(number);
-        OmegaTrack.WIRETAP.resetBruteforcer(number);
+        this.omegaTrack.wiretap.resetBruteforcer(number);
         sender.getBot().sendResponse("Okay, reset the grabber to start at #" + number + ".", sender.getMsgSender());
     }
 

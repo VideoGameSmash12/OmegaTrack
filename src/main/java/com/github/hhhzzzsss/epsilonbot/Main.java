@@ -1,7 +1,5 @@
 package com.github.hhhzzzsss.epsilonbot;
 
-import me.videogamesm12.omegatrack.OmegaTrack;
-
 import java.util.concurrent.TimeUnit;
 
 public class Main {
@@ -22,7 +20,7 @@ public class Main {
     }
 
     public static void stopBot() {
-        OmegaTrack.FLAGS.save();
+        if (bot.omegaTrack != null) bot.omegaTrack.flags.save();
         try {
             bot.awaitTermination(15, TimeUnit.SECONDS);
         } catch (InterruptedException e) {

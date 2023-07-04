@@ -1,14 +1,19 @@
-package me.videogamesm12.omegatrack.command;
+package me.videogamesm12.omegatrack.command.commands;
 
-import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import me.videogamesm12.omegatrack.OmegaTrack;
+import me.videogamesm12.omegatrack.command.AbstractOmegaTrackCommand;
 import me.videogamesm12.omegatrack.storage.OTFlags;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
 
-public class STFUCommand extends ChatCommand
+public class STFUCommand extends AbstractOmegaTrackCommand
 {
+    public STFUCommand(final OmegaTrack omegaTrack)
+    {
+        super(omegaTrack);
+    }
+
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
@@ -17,7 +22,7 @@ public class STFUCommand extends ChatCommand
             throw new CommandException("You must be in-game to do this.");
         }
 
-        final OTFlags.UserFlags flags = OmegaTrack.FLAGS.getFlags(sender.getUuid());
+        final OTFlags.UserFlags flags = this.omegaTrack.flags.getFlags(sender.getUuid());
         flags.setSupposedToShutUp(!flags.isSupposedToShutUp());
 
         final String status = flags.isSupposedToShutUp() ? "no longer" : "now";
