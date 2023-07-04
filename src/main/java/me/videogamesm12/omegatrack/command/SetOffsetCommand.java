@@ -1,6 +1,5 @@
 package me.videogamesm12.omegatrack.command;
 
-import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;

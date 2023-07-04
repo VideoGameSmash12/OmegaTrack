@@ -4,12 +4,9 @@ import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
