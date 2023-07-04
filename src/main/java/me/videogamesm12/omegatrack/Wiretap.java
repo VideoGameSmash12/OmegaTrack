@@ -178,15 +178,6 @@ public class Wiretap extends SessionAdapter
                 resetBackwardsBruteforcer(entityEvent.getEntityId());
             }
         }
-        /*// If a pig spawns in, assume we spawned it in and reset the backwards bruteforcer. We use this to find out what
-        //  the latest entity ID is when a player joins so that we can index them faster.
-        else if (packet instanceof ClientboundAddEntityPacket entityAdd)
-        {
-            if (entityAdd.getType() == EntityType.PIG && entityAdd.getEntityId() > maxId)
-            {
-                resetBackwardsBruteforcer(entityAdd.getEntityId());
-            }
-        }*/
         // Link players manually and if their entity ID is larger than the largest known player entity ID, reset the
         //  backwards bruteforcer.
         else if (packet instanceof ClientboundAddPlayerPacket playerAdd)
@@ -220,7 +211,7 @@ public class Wiretap extends SessionAdapter
             if (playerInfo.getAction() == PlayerListEntryAction.ADD_PLAYER)
             {
                 final UUID uuid = playerInfo.getEntries()[0].getProfile().getId();
-                final OTFlags.UserFlags flags = OmegaTrack.FLAGS.getFlags(uuid);
+                final OTFlags.UserFlags flags = OmegaTrack.getFlagStorage().getFlags(uuid);
 
                 // If they are opted-in...
                 if (!flags.isOptedOut())
@@ -412,7 +403,7 @@ public class Wiretap extends SessionAdapter
      */
     public void link(int id, UUID uuid)
     {
-        if (OmegaTrack.FLAGS.getFlags(uuid).isOptedOut())
+        if (OmegaTrack.getFlagStorage().getFlags(uuid).isOptedOut())
             return;
 
         uuids.put(uuid, id);

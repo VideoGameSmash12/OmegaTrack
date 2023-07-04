@@ -10,7 +10,7 @@ public class ResetCommand extends ChatCommand
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
-        OmegaTrack.WIRETAP.resetBruteforcer(0);
+        OmegaTrack.getWiretap().resetBruteforcer(0);
         sender.getBot().sendResponse("Okay, I've reset the bruteforcer for you.", sender.getMsgSender());
     }
 

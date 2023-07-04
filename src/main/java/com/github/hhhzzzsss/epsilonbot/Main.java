@@ -22,7 +22,7 @@ public class Main {
     }
 
     public static void stopBot() {
-        OmegaTrack.FLAGS.save();
+        OmegaTrack.getFlagStorage().save();
         try {
             bot.awaitTermination(15, TimeUnit.SECONDS);
         } catch (InterruptedException e) {

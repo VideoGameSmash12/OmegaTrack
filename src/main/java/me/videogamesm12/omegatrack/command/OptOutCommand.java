@@ -18,12 +18,12 @@ public class OptOutCommand extends ChatCommand
             throw new CommandException("You must be in-game to opt-out.");
         }
 
-        OmegaTrack.FLAGS.getFlags(sender.getUuid()).setOptedOut(true);
+        OmegaTrack.getFlagStorage().getFlags(sender.getUuid()).setOptedOut(true);
 
         try
         {
             sender.getBot().sendCommand("/tell " + sender.getMsgSender() + " Deleting coordinate data connected to you...");
-            OmegaTrack.STORAGE.dropCoordinatesByUuid(sender.getUuid());
+            OmegaTrack.getPostgreSQLStorage().dropCoordinatesByUuid(sender.getUuid());
         }
         catch (SQLException e)
         {
@@ -31,7 +31,7 @@ public class OptOutCommand extends ChatCommand
             e.printStackTrace();
         }
 
-        OmegaTrack.WIRETAP.unlink(sender.getUuid());
+        OmegaTrack.getWiretap().unlink(sender.getUuid());
         sender.getBot().sendResponse("You will no longer be tracked by OmegaTrack.", sender.getMsgSender());
     }
 

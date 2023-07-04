@@ -3,7 +3,6 @@ package me.videogamesm12.omegatrack.data;
 import lombok.Getter;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
 
-import java.sql.PreparedStatement;
 import java.util.Date;
 import java.util.UUID;
 

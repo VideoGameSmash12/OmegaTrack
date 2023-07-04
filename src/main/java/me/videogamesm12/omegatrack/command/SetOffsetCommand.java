@@ -1,6 +1,5 @@
 package me.videogamesm12.omegatrack.command;
 
-import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
@@ -29,8 +28,7 @@ public class SetOffsetCommand extends ChatCommand
             throw new CommandException("Did you forget what a number was? Because '" + args[0] + " sure as heck isn't a number");
         }
 
-        //OmegaTrack.WIRETAP.setCurrentId(number);
-        OmegaTrack.WIRETAP.resetBruteforcer(number);
+        OmegaTrack.getWiretap().resetBruteforcer(number);
         sender.getBot().sendResponse("Okay, reset the grabber to start at #" + number + ".", sender.getMsgSender());
     }
 

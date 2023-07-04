@@ -17,7 +17,7 @@ public class AmIIndexedCommand extends ChatCommand
             throw new CommandException("Non-players are not indexed by default.");
         }
 
-        final String result = OmegaTrack.WIRETAP.getUuids().containsKey(sender.getUuid()) ?
+        final String result = OmegaTrack.getWiretap().getUuids().containsKey(sender.getUuid()) ?
                 "Yes, you are indexed." : "No, you are not currently indexed.";
 
         sender.getBot().sendResponse(result, sender.getMsgSender());

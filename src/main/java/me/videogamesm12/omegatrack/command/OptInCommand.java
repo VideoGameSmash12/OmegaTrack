@@ -17,7 +17,7 @@ public class OptInCommand extends ChatCommand
             throw new CommandException("You must be in-game to opt-in.");
         }
 
-        OmegaTrack.FLAGS.getFlags(sender.getUuid()).setOptedOut(false);
+        OmegaTrack.getFlagStorage().getFlags(sender.getUuid()).setOptedOut(false);
         sender.getBot().sendResponse("You will now be tracked by OmegaTrack. To start being tracked immediately, teleport to me or reconnect.", sender.getMsgSender());
     }
 

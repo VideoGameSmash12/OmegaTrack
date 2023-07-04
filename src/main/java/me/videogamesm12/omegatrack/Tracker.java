@@ -29,11 +29,11 @@ public class Tracker extends SessionAdapter
     {
         querier.scheduleAtFixedRate(() ->
         {
-            for (int i : OmegaTrack.WIRETAP.getUuids().values())
+            for (int i : OmegaTrack.getWiretap().getUuids().values())
             {
-                if (OmegaTrack.FLAGS.getFlags(OmegaTrack.WIRETAP.getById(i)).isOptedOut())
+                if (OmegaTrack.getFlagStorage().getFlags(OmegaTrack.getWiretap().getById(i)).isOptedOut())
                 {
-                    OmegaTrack.WIRETAP.unlink(OmegaTrack.WIRETAP.getById(i));
+                    OmegaTrack.getWiretap().unlink(OmegaTrack.getWiretap().getById(i));
                     continue;
                 }
 
@@ -50,32 +50,40 @@ public class Tracker extends SessionAdapter
         if (packet instanceof ClientboundTagQueryPacket queryPacket
                 && queryPacket.getNbt().contains("EnderItems"))
         {
+            // Gets the user's UUID
             final Object uuidObject = queryPacket.getNbt().get("UUID").getValue();
-            UUID uuid;
+            final UUID uuid;
+
+            // For compatibility with Delta
             if (uuidObject instanceof String string)
             {
                 uuid = UUID.fromString(string);
             }
+            // For unpatched servers
             else
             {
                 uuid = UUIDUtil.fromIntArray((int[]) uuidObject);
             }
 
-            if (OmegaTrack.FLAGS.getFlags(uuid).isOptedOut())
+            // Players who are not opted-in should not be tracked.
+            if (OmegaTrack.getFlagStorage().getFlags(uuid).isOptedOut())
                 return;
 
-            String world = (String) queryPacket.getNbt().get("Dimension").getValue();
-            Object posRaw = queryPacket.getNbt().get("Pos").getValue();
+            final String world = (String) queryPacket.getNbt().get("Dimension").getValue();
+            final Object posRaw = queryPacket.getNbt().get("Pos").getValue();
 
+            // Prevents non-list position coordinates from being indexed (primarily because we don't know what it is)
             if (!(posRaw instanceof ArrayList))
                 return;
 
-            List<DoubleTag> doubles = (List<DoubleTag>) queryPacket.getNbt().get("Pos").getValue();
+            // Extracts the position from the NBT
+            final List<DoubleTag> doubles = (List<DoubleTag>) queryPacket.getNbt().get("Pos").getValue();
 
             System.out.println("Sending " + uuid + " to database");
             try
             {
-                OmegaTrack.STORAGE.queue(new PositionDataset(uuid, world, doubles.get(0).getValue(), doubles.get(2).getValue()));
+                // Queues the dataset to be sent to the database
+                OmegaTrack.getPostgreSQLStorage().queue(new PositionDataset(uuid, world, doubles.get(0).getValue(), doubles.get(2).getValue()));
             }
             catch (Throwable ex)
             {

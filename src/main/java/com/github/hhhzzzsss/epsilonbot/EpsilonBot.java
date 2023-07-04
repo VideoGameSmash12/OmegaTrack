@@ -298,9 +298,9 @@ public class EpsilonBot {
 			e.printStackTrace();
 		}
 		// OmegaTrack start - save what we have!
-		OmegaTrack.WIRETAP.stop();
-		OmegaTrack.TRACKER.stop();
-		OmegaTrack.STORAGE.interrupt();
+		OmegaTrack.getWiretap().stop();
+		OmegaTrack.getTracker().stop();
+		OmegaTrack.getPostgreSQLStorage().interrupt();
 		// OmegaTrack stop
 		executor.shutdownNow();
 	}
@@ -341,8 +341,6 @@ public class EpsilonBot {
 		commandList.add(new TestCommand(this));
 
 		commandList.add(new BuildStatusCommand(this));
-		commandList.add(new ReloadIndexCommand(this));
-		commandList.add(new RepairCommand(this));
 		commandList.add(new MapartCommand(this));
 		commandList.add(new ShowQueueCommand(this));
 		commandList.add(new CancelMapartCommand(this));

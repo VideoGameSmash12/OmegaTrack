@@ -17,8 +17,8 @@ import java.util.concurrent.TimeUnit;
 
 public class PostgreSQLStorage extends Thread
 {
-    private Queue<PositionDataset> queue = new ConcurrentLinkedQueue<>();
-    private ScheduledExecutorService queueManager = new ScheduledThreadPoolExecutor(2);
+    private final Queue<PositionDataset> queue = new ConcurrentLinkedQueue<>();
+    private final ScheduledExecutorService queueManager = new ScheduledThreadPoolExecutor(2);
     //--
     private Connection connection;
 
@@ -88,11 +88,6 @@ public class PostgreSQLStorage extends Thread
     public void queue(PositionDataset set)
     {
         queue.add(set);
-    }
-
-    public void sendStatement(String statement) throws SQLException
-    {
-        connection.prepareStatement(statement).execute();
     }
 
     private void addSet(@NotNull PositionDataset set) throws SQLException

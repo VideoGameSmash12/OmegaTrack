@@ -10,7 +10,9 @@ public class WTCommand extends ChatCommand
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
-        sender.getBot().sendResponse("Traditional ID #" + OmegaTrack.WIRETAP.getCurrentTraditionalId() + ". Backwards ID #" + OmegaTrack.WIRETAP.getCurrentBackwardsId() + ". " + OmegaTrack.WIRETAP.getUuids().size() + " player(s) have been indexed.", sender.getMsgSender());
+        sender.getBot().sendResponse("Traditional ID #" + OmegaTrack.getWiretap().getCurrentTraditionalId()
+                + ". Backwards ID #" + OmegaTrack.getWiretap().getCurrentBackwardsId() + ". "
+                + OmegaTrack.getWiretap().getUuids().size() + " player(s) have been indexed.", sender.getMsgSender());
     }
 
     @Override

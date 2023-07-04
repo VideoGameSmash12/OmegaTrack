@@ -18,7 +18,7 @@ public class STFUCommand extends ChatCommand
             throw new CommandException("You must be in-game to do this.");
         }
 
-        final OTFlags.UserFlags flags = OmegaTrack.FLAGS.getFlags(sender.getUuid());
+        final OTFlags.UserFlags flags = OmegaTrack.getFlagStorage().getFlags(sender.getUuid());
         flags.setSupposedToShutUp(!flags.isSupposedToShutUp());
 
         final String status = flags.isSupposedToShutUp() ? "no longer" : "now";

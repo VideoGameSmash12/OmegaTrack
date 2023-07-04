@@ -1,5 +1,6 @@
 package me.videogamesm12.omegatrack;
 
+import lombok.Getter;
 import me.videogamesm12.omegatrack.storage.OTFlags;
 
 /**
@@ -8,31 +9,28 @@ import me.videogamesm12.omegatrack.storage.OTFlags;
  */
 public class OmegaTrack
 {
-    public static Tracker TRACKER;
-    public static Wiretap WIRETAP;
-    public static PostgreSQLStorage STORAGE;
+    @Getter
+    public static Wiretap wiretap;
     //--
-    public static OTFlags FLAGS;
+    @Getter
+    private static Tracker tracker;
+    @Getter
+    private static PostgreSQLStorage postgreSQLStorage;
+    @Getter
+    private static OTFlags flagStorage;
 
     public void start()
     {
-        FLAGS = OTFlags.load();
+        flagStorage = OTFlags.load();
         try
         {
-            STORAGE = new PostgreSQLStorage();
+            postgreSQLStorage = new PostgreSQLStorage();
         }
         catch (Exception ex)
         {
             ex.printStackTrace();
         }
-        WIRETAP = new Wiretap();
-        TRACKER = new Tracker();
-    }
-
-    public void stop()
-    {
-        WIRETAP = null;
-        STORAGE = null;
-        TRACKER = null;
+        wiretap = new Wiretap();
+        tracker = new Tracker();
     }
 }
