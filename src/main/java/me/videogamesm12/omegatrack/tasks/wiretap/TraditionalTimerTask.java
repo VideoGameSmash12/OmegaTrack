@@ -21,11 +21,7 @@ public class TraditionalTimerTask extends AbstractWiretapDependentTask
             return;
         }
 
-        // Wraps back
-        if (this.wiretap.currentTraditionalId == Integer.MAX_VALUE)
-            this.wiretap.currentTraditionalId = 0;
-        else
-            this.wiretap.currentTraditionalId++;
+        this.wiretap.currentTraditionalId++;
 
         // Has the account been linked already or opted out of tracking?
         if (!this.wiretap.isLinked(this.wiretap.currentTraditionalId))
