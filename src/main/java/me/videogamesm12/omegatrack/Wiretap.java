@@ -16,12 +16,14 @@ import com.github.steveice10.packetlib.packet.Packet;
 import lombok.Getter;
 import lombok.Setter;
 import me.videogamesm12.omegatrack.storage.OTFlags;
+import me.videogamesm12.omegatrack.tasks.wiretap.BackwardsTimerTask;
+import me.videogamesm12.omegatrack.tasks.wiretap.TraditionalBackwardsTimerTask;
+import me.videogamesm12.omegatrack.tasks.wiretap.TraditionalTimerTask;
+import me.videogamesm12.omegatrack.tasks.wiretap.WiretapTask;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -37,53 +39,40 @@ public class Wiretap extends SessionAdapter
     @Getter
     private final Map<UUID, Integer> uuids = new HashMap<>();
     //--
-    private ScheduledExecutorService outBrute = Executors.newScheduledThreadPool(1);
     private Queue<Packet> outBruteQueue = new ConcurrentLinkedQueue<>();
-    //--
-    private ScheduledExecutorService out = Executors.newScheduledThreadPool(1);
     private Queue<Packet> outQueue = new ConcurrentLinkedQueue<>();
     //--
     @Getter
     @Setter
-    private int currentTraditionalId = 0;
+    public int currentTraditionalId = 0;
     @Getter
     @Setter
-    private int currentTraditionalBackwardsId = 0;
+    public int currentTraditionalBackwardsId = 0;
     @Getter
     @Setter
-    private int currentBackwardsId = 0;
+    public int currentBackwardsId = 0;
     //--
     @Getter
     private int maxId = 0;
     //--
-    private Timer bruteTimer = new Timer();
-    private Timer backwardsBruteTimer = new Timer();
+    private final Timer timer;
+    private final TimerTask regularTimerTask;
+    private final TimerTask bruteForceTimerTask;
+    private TimerTask backwardsTimerTask;
+    private TimerTask traditionalBackwardsTimerTask;
+    private TimerTask traditionalTimerTask;
 
-    public Wiretap()
+    public Wiretap(final Timer timer)
     {
+        this.timer = timer;
         EpsilonBot.INSTANCE.getSession().addListener(this);
 
-        out.scheduleAtFixedRate(() -> {
-            for (int i = 0; i < outQueue.size(); i++)
-            {
-                if (!EpsilonBot.INSTANCE.getStateManager().isOnFreedomServer())
-                    break;
-
-                EpsilonBot.INSTANCE.sendPacket(outQueue.poll());
-            }
-        }, 0, 100, TimeUnit.MILLISECONDS);
-
+        this.regularTimerTask = new WiretapTask(this.outQueue);
+        timer.scheduleAtFixedRate(this.regularTimerTask, 0, 100);
         // Slightly throttled compared to the regular `out`, but this is to avoid spamming the server with possibly
         //  thousands of requests per second.
-        outBrute.scheduleAtFixedRate(() -> {
-            for (int i = 0; i < outBruteQueue.size(); i++)
-            {
-                if (!EpsilonBot.INSTANCE.getStateManager().isOnFreedomServer())
-                    break;
-
-                EpsilonBot.INSTANCE.sendPacket(outBruteQueue.poll());
-            }
-        }, 0, 333, TimeUnit.MILLISECONDS);
+        this.bruteForceTimerTask = new WiretapTask(this.outBruteQueue);
+        timer.scheduleAtFixedRate(this.bruteForceTimerTask, 0, 333);
 
         // Sets up the bruteforcer.
         resetBruteforcer(0);
@@ -91,14 +80,22 @@ public class Wiretap extends SessionAdapter
 
     public void stop()
     {
-        try
+        this.regularTimerTask.cancel();
+        this.bruteForceTimerTask.cancel();
+
+        if (this.backwardsTimerTask != null)
         {
-            out.awaitTermination(5000, TimeUnit.MILLISECONDS);
-            outBrute.awaitTermination(5000, TimeUnit.MILLISECONDS);
+            this.backwardsTimerTask.cancel();
         }
-        catch (InterruptedException e)
+
+        if (this.traditionalBackwardsTimerTask != null)
         {
-            throw new RuntimeException(e);
+            this.traditionalBackwardsTimerTask.cancel();
+        }
+
+        if (this.traditionalTimerTask != null)
+        {
+            this.traditionalTimerTask.cancel();
         }
     }
 
@@ -287,43 +284,15 @@ public class Wiretap extends SessionAdapter
      */
     public void resetBackwardsBruteforcer(int myId)
     {
-        // Cancel any existing operations and kills the original Timer as we can't schedule tasks on timers that had
-        //  `cancel()` called already
-        if (backwardsBruteTimer != null)
-        {
-            backwardsBruteTimer.cancel();
-            backwardsBruteTimer = null;
-        }
-
         setCurrentBackwardsId(myId);
 
-        // Sets up a new Timer
-        backwardsBruteTimer = new Timer();
+        if (this.backwardsTimerTask != null) {
+            this.backwardsTimerTask.cancel();
+        }
 
         // Backwards bruteforce
-        backwardsBruteTimer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                // Has the account been linked already or opted out of tracking?
-                if (!isLinked(currentBackwardsId))
-                {
-                    doWiretapBruteQuery(currentBackwardsId);
-                }
-
-                // Decrement the ID for the next query if it's above 0
-                if (currentBackwardsId > 0)
-                {
-                    currentBackwardsId--;
-                }
-                // We've brute-forced as much as we could in this manner.
-                else if (currentBackwardsId == 0)
-                {
-                    cancel();
-                }
-            }
-        }, 0, 100);
+        this.backwardsTimerTask = new BackwardsTimerTask(this);
+        this.timer.scheduleAtFixedRate(this.backwardsTimerTask, 0, 100);
     }
 
     /**
@@ -333,64 +302,29 @@ public class Wiretap extends SessionAdapter
     {
         // Cancel any existing operations and kills the original Timer as we can't schedule tasks on timers that had
         //  `cancel()` called already
-        if (bruteTimer != null)
+        if (this.traditionalBackwardsTimerTask != null)
         {
-            bruteTimer.cancel();
-            bruteTimer = null;
+            this.traditionalBackwardsTimerTask.cancel();
+        }
+
+        if (this.traditionalTimerTask != null)
+        {
+            this.traditionalTimerTask.cancel();
         }
 
         // Resets things back from square one
         setCurrentTraditionalId(offset);
         setCurrentTraditionalBackwardsId(offset);
 
-        // Sets up a new Timer
-        bruteTimer = new Timer();
-
         // Traditional forwards brute-forcing - This takes the offset and starts brute-forcing entity IDs starting at
         //  that number. On start-up by default it starts at 0 just in case the server restarted.
-        bruteTimer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                // If we aren't on the server, let's go ahead and reset everything to 0 just in case the server
-                //  restarted. Note that getting kicked for any reason would also result in this behavior.
-                if (!EpsilonBot.INSTANCE.getStateManager().isOnFreedomServer())
-                {
-                    currentTraditionalId = 0;
-                    return;
-                }
-
-                // Wraps back
-                if (currentTraditionalId == Integer.MAX_VALUE)
-                    currentTraditionalId = 0;
-                else
-                    currentTraditionalId++;
-
-                // Has the account been linked already or opted out of tracking?
-                if (!isLinked(currentTraditionalId))
-                    doWiretapBruteQuery(currentTraditionalId);
-            }
-        }, 0, 100);
+        this.traditionalTimerTask = new TraditionalTimerTask(this);
+        this.timer.schedule(this.traditionalTimerTask, 0, 100);
 
         // Traditional backwards brute-forcing - Usually on start-up this doesn't do anything but if the offset is set
         //  via the command, this takes the offset and then starts brute-forcing IDs in the opposite direction.
-        bruteTimer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                // Wraps back
-                if (currentTraditionalBackwardsId == 0)
-                    cancel();
-                else
-                    currentTraditionalBackwardsId--;
-
-                // Has the account been linked already or opted out of tracking?
-                if (!isLinked(currentTraditionalBackwardsId))
-                    doWiretapBruteQuery(currentTraditionalBackwardsId);
-            }
-        }, 0, 100);
+        this.traditionalBackwardsTimerTask = new TraditionalBackwardsTimerTask(this);
+        this.timer.schedule(this.traditionalBackwardsTimerTask, 0, 100);
     }
 
     public boolean isLinked(UUID uuid)

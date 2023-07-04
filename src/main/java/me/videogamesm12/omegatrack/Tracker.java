@@ -8,13 +8,10 @@ import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import com.github.steveice10.packetlib.packet.Packet;
 import me.videogamesm12.omegatrack.data.PositionDataset;
+import me.videogamesm12.omegatrack.tasks.tracker.TrackerTask;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,23 +20,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class Tracker extends SessionAdapter
 {
-    private final ScheduledExecutorService querier = new ScheduledThreadPoolExecutor(1);
+    private final TrackerTask trackerTask;
 
-    public Tracker()
+    public Tracker(final Timer timer)
     {
-        querier.scheduleAtFixedRate(() ->
-        {
-            for (int i : OmegaTrack.WIRETAP.getUuids().values())
-            {
-                if (OmegaTrack.FLAGS.getFlags(OmegaTrack.WIRETAP.getById(i)).isOptedOut())
-                {
-                    OmegaTrack.WIRETAP.unlink(OmegaTrack.WIRETAP.getById(i));
-                    continue;
-                }
-
-                EpsilonBot.INSTANCE.sendPacket(new ServerboundEntityTagQuery(i, i));
-            }
-        }, 0, 3000, TimeUnit.MILLISECONDS);
+        this.trackerTask = new TrackerTask();
+        timer.scheduleAtFixedRate(this.trackerTask, 0, 3000);
 
         EpsilonBot.INSTANCE.getSession().addListener(this);
     }
@@ -86,13 +72,6 @@ public class Tracker extends SessionAdapter
 
     public void stop()
     {
-        try
-        {
-            querier.awaitTermination(5000, TimeUnit.MILLISECONDS);
-        }
-        catch (InterruptedException e)
-        {
-            throw new RuntimeException(e);
-        }
+        this.trackerTask.cancel();
     }
 }
