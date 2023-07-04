@@ -28,20 +28,17 @@ import java.util.concurrent.TimeUnit;
  * <h1>Wiretap</h1>
  * <p>Listens for all entity spawn and player join events to determine the entity ID of players, primarily to optimize
  *    the process of tracking players.</p>
- *  --
- *  TODO:   Figure out a way to get the newest entity ID (probably using Paintings) and utilize it to query entity IDs
- *          for players that join to further improve the efficiency of the Tracker using the power of math.
  */
 public class Wiretap extends SessionAdapter
 {
     @Getter
     private final Map<UUID, Integer> uuids = new HashMap<>();
     //--
-    private ScheduledExecutorService outBrute = Executors.newScheduledThreadPool(1);
-    private Queue<Packet> outBruteQueue = new ConcurrentLinkedQueue<>();
+    private final ScheduledExecutorService outBrute = Executors.newScheduledThreadPool(1);
+    private final Queue<Packet> outBruteQueue = new ConcurrentLinkedQueue<>();
     //--
-    private ScheduledExecutorService out = Executors.newScheduledThreadPool(1);
-    private Queue<Packet> outQueue = new ConcurrentLinkedQueue<>();
+    private final ScheduledExecutorService out = Executors.newScheduledThreadPool(1);
+    private final Queue<Packet> outQueue = new ConcurrentLinkedQueue<>();
     //--
     @Getter
     @Setter
@@ -127,7 +124,7 @@ public class Wiretap extends SessionAdapter
             }
         }
         // Response to queries we made previously
-        else if (packet instanceof ClientboundTagQueryPacket tagQuery)
+        else if (packet instanceof ClientboundTagQueryPacket tagQuery && tagQuery.getNbt().contains("EnderItems"))
         {
             // We just link UUIDs with entity IDs here.
             int id = tagQuery.getTransactionId();
