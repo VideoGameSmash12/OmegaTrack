@@ -1,4 +1,4 @@
-package me.videogamesm12.omegatrack.command;
+package me.videogamesm12.omegatrack.command.commands;
 
 import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;

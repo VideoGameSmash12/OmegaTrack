@@ -16,13 +16,14 @@ import com.github.steveice10.packetlib.packet.Packet;
 import lombok.Getter;
 import lombok.Setter;
 import me.videogamesm12.omegatrack.storage.OTFlags;
+import me.videogamesm12.omegatrack.tasks.wiretap.BackwardsTimerTask;
+import me.videogamesm12.omegatrack.tasks.wiretap.TraditionalBackwardsTimerTask;
+import me.videogamesm12.omegatrack.tasks.wiretap.TraditionalTimerTask;
+import me.videogamesm12.omegatrack.tasks.wiretap.PacketSenderTask;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>Wiretap</h1>
@@ -31,71 +32,73 @@ import java.util.concurrent.TimeUnit;
  */
 public class Wiretap extends SessionAdapter
 {
+    private final OmegaTrack omegaTrack;
+    @Getter
+    private final EpsilonBot epsilonBot;
     @Getter
     private final Map<UUID, Integer> uuids = new HashMap<>();
     //--
-    private final ScheduledExecutorService outBrute = Executors.newScheduledThreadPool(1);
-    private final Queue<Packet> outBruteQueue = new ConcurrentLinkedQueue<>();
-    //--
-    private final ScheduledExecutorService out = Executors.newScheduledThreadPool(1);
-    private final Queue<Packet> outQueue = new ConcurrentLinkedQueue<>();
+    private Queue<Packet> outBruteQueue = new ConcurrentLinkedQueue<>();
+    private Queue<Packet> outQueue = new ConcurrentLinkedQueue<>();
     //--
     @Getter
     @Setter
-    private int currentTraditionalId = 0;
+    public int currentTraditionalId = 0;
     @Getter
     @Setter
-    private int currentTraditionalBackwardsId = 0;
+    public int currentTraditionalBackwardsId = 0;
     @Getter
     @Setter
-    private int currentBackwardsId = 0;
+    public int currentBackwardsId = 0;
     //--
     @Getter
     private int maxId = 0;
     //--
-    private Timer bruteTimer = new Timer();
-    private Timer backwardsBruteTimer = new Timer();
+    private final Timer timer;
+    private final TimerTask regularTimerTask;
+    private final TimerTask bruteForceTimerTask;
+    private TimerTask backwardsTimerTask;
+    private TimerTask traditionalBackwardsTimerTask;
+    private TimerTask traditionalTimerTask;
 
-    public Wiretap()
+    public void start()
     {
-        EpsilonBot.INSTANCE.getSession().addListener(this);
-
-        out.scheduleAtFixedRate(() -> {
-            for (int i = 0; i < outQueue.size(); i++)
-            {
-                if (!EpsilonBot.INSTANCE.getStateManager().isOnFreedomServer())
-                    break;
-
-                EpsilonBot.INSTANCE.sendPacket(outQueue.poll());
-            }
-        }, 0, 100, TimeUnit.MILLISECONDS);
-
+        this.epsilonBot.getSession().addListener(this);
+        this.timer.scheduleAtFixedRate(this.regularTimerTask, 0, 100);
         // Slightly throttled compared to the regular `out`, but this is to avoid spamming the server with possibly
         //  thousands of requests per second.
-        outBrute.scheduleAtFixedRate(() -> {
-            for (int i = 0; i < outBruteQueue.size(); i++)
-            {
-                if (!EpsilonBot.INSTANCE.getStateManager().isOnFreedomServer())
-                    break;
-
-                EpsilonBot.INSTANCE.sendPacket(outBruteQueue.poll());
-            }
-        }, 0, 333, TimeUnit.MILLISECONDS);
-
+        this.timer.scheduleAtFixedRate(this.bruteForceTimerTask, 0, 333);
         // Sets up the bruteforcer.
         resetBruteforcer(0);
     }
 
+    public Wiretap(final OmegaTrack omegaTrack)
+    {
+        this.omegaTrack = omegaTrack;
+        this.timer = this.omegaTrack.timer;
+        this.epsilonBot = this.omegaTrack.epsilonBot;
+        this.regularTimerTask = new PacketSenderTask(this,this.outQueue);
+        this.bruteForceTimerTask = new PacketSenderTask(this, this.outBruteQueue);
+    }
+
     public void stop()
     {
-        try
+        this.regularTimerTask.cancel();
+        this.bruteForceTimerTask.cancel();
+
+        if (this.backwardsTimerTask != null)
         {
-            out.awaitTermination(5000, TimeUnit.MILLISECONDS);
-            outBrute.awaitTermination(5000, TimeUnit.MILLISECONDS);
+            this.backwardsTimerTask.cancel();
         }
-        catch (InterruptedException e)
+
+        if (this.traditionalBackwardsTimerTask != null)
         {
-            throw new RuntimeException(e);
+            this.traditionalBackwardsTimerTask.cancel();
+        }
+
+        if (this.traditionalTimerTask != null)
+        {
+            this.traditionalTimerTask.cancel();
         }
     }
 
@@ -114,7 +117,7 @@ public class Wiretap extends SessionAdapter
             int myId = login.getEntityId();
 
             // Cool, storing that in the list.
-            link(myId, EpsilonBot.INSTANCE.getUuid());
+            link(myId, this.epsilonBot.getUuid());
 
             // Is it the newest ID we know?
             if (myId > maxId)
@@ -183,9 +186,9 @@ public class Wiretap extends SessionAdapter
         else if (packet instanceof ClientboundAddPlayerPacket playerAdd)
         {
             // Link ourselves because we know our current entity ID
-            if (playerAdd.getUuid().equals(EpsilonBot.INSTANCE.getUuid()))
+            if (playerAdd.getUuid().equals(this.epsilonBot.getUuid()))
             {
-                link(playerAdd.getEntityId(), EpsilonBot.INSTANCE.getUuid());
+                link(playerAdd.getEntityId(), this.epsilonBot.getUuid());
                 resetBackwardsBruteforcer(playerAdd.getEntityId());
             }
             // Manually link the entity ID with the UUID, bypassing brute-forcing attempts entirely
@@ -211,7 +214,7 @@ public class Wiretap extends SessionAdapter
             if (playerInfo.getAction() == PlayerListEntryAction.ADD_PLAYER)
             {
                 final UUID uuid = playerInfo.getEntries()[0].getProfile().getId();
-                final OTFlags.UserFlags flags = OmegaTrack.getFlagStorage().getFlags(uuid);
+                final OTFlags.UserFlags flags = this.omegaTrack.flags.getFlags(uuid);
 
                 // If they are opted-in...
                 if (!flags.isOptedOut())
@@ -219,13 +222,13 @@ public class Wiretap extends SessionAdapter
                     // Remind them that this is the case
                     if (!flags.isSupposedToShutUp())
                     {
-                        EpsilonBot.INSTANCE.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to "
+                        this.epsilonBot.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to "
                                 + "being tracked by OmegaTrack. If you wish for this to stop, use the command !optout. "
                                 + "To disable messages like these, use the !stfu command.");
                     }
 
                     // Attempt to find the latest entity ID by spawning in a Pig
-                    EpsilonBot.INSTANCE.sendCommand("/spawnmob pig 1");
+                    this.epsilonBot.sendCommand("/spawnmob pig 1");
                 }
             }
             // Unlink players that leave the server
@@ -275,43 +278,16 @@ public class Wiretap extends SessionAdapter
      */
     public void resetBackwardsBruteforcer(int myId)
     {
-        // Cancel any existing operations and kills the original Timer as we can't schedule tasks on timers that had
-        //  `cancel()` called already
-        if (backwardsBruteTimer != null)
-        {
-            backwardsBruteTimer.cancel();
-            backwardsBruteTimer = null;
-        }
-
         setCurrentBackwardsId(myId);
 
-        // Sets up a new Timer
-        backwardsBruteTimer = new Timer();
+        if (this.backwardsTimerTask != null)
+        {
+            this.backwardsTimerTask.cancel();
+        }
 
         // Backwards bruteforce
-        backwardsBruteTimer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                // Has the account been linked already or opted out of tracking?
-                if (!isLinked(currentBackwardsId))
-                {
-                    doWiretapBruteQuery(currentBackwardsId);
-                }
-
-                // Decrement the ID for the next query if it's above 0
-                if (currentBackwardsId > 0)
-                {
-                    currentBackwardsId--;
-                }
-                // We've brute-forced as much as we could in this manner.
-                else if (currentBackwardsId == 0)
-                {
-                    cancel();
-                }
-            }
-        }, 0, 100);
+        this.backwardsTimerTask = new BackwardsTimerTask(this);
+        this.timer.scheduleAtFixedRate(this.backwardsTimerTask, 0, 100);
     }
 
     /**
@@ -321,64 +297,29 @@ public class Wiretap extends SessionAdapter
     {
         // Cancel any existing operations and kills the original Timer as we can't schedule tasks on timers that had
         //  `cancel()` called already
-        if (bruteTimer != null)
+        if (this.traditionalBackwardsTimerTask != null)
         {
-            bruteTimer.cancel();
-            bruteTimer = null;
+            this.traditionalBackwardsTimerTask.cancel();
+        }
+
+        if (this.traditionalTimerTask != null)
+        {
+            this.traditionalTimerTask.cancel();
         }
 
         // Resets things back from square one
         setCurrentTraditionalId(offset);
         setCurrentTraditionalBackwardsId(offset);
 
-        // Sets up a new Timer
-        bruteTimer = new Timer();
-
         // Traditional forwards brute-forcing - This takes the offset and starts brute-forcing entity IDs starting at
         //  that number. On start-up by default it starts at 0 just in case the server restarted.
-        bruteTimer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                // If we aren't on the server, let's go ahead and reset everything to 0 just in case the server
-                //  restarted. Note that getting kicked for any reason would also result in this behavior.
-                if (!EpsilonBot.INSTANCE.getStateManager().isOnFreedomServer())
-                {
-                    currentTraditionalId = 0;
-                    return;
-                }
-
-                // Wraps back
-                if (currentTraditionalId == Integer.MAX_VALUE)
-                    currentTraditionalId = 0;
-                else
-                    currentTraditionalId++;
-
-                // Has the account been linked already or opted out of tracking?
-                if (!isLinked(currentTraditionalId))
-                    doWiretapBruteQuery(currentTraditionalId);
-            }
-        }, 0, 100);
+        this.traditionalTimerTask = new TraditionalTimerTask(this);
+        this.timer.schedule(this.traditionalTimerTask, 0, 100);
 
         // Traditional backwards brute-forcing - Usually on start-up this doesn't do anything but if the offset is set
         //  via the command, this takes the offset and then starts brute-forcing IDs in the opposite direction.
-        bruteTimer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                // Wraps back
-                if (currentTraditionalBackwardsId == 0)
-                    cancel();
-                else
-                    currentTraditionalBackwardsId--;
-
-                // Has the account been linked already or opted out of tracking?
-                if (!isLinked(currentTraditionalBackwardsId))
-                    doWiretapBruteQuery(currentTraditionalBackwardsId);
-            }
-        }, 0, 100);
+        this.traditionalBackwardsTimerTask = new TraditionalBackwardsTimerTask(this);
+        this.timer.schedule(this.traditionalBackwardsTimerTask, 0, 100);
     }
 
     public boolean isLinked(UUID uuid)
@@ -403,7 +344,7 @@ public class Wiretap extends SessionAdapter
      */
     public void link(int id, UUID uuid)
     {
-        if (OmegaTrack.getFlagStorage().getFlags(uuid).isOptedOut())
+        if (this.omegaTrack.flags.getFlags(uuid).isOptedOut())
             return;
 
         uuids.put(uuid, id);

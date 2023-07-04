@@ -1,23 +1,27 @@
-package me.videogamesm12.omegatrack.command;
+package me.videogamesm12.omegatrack.command.commands;
 
-import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import me.videogamesm12.omegatrack.OmegaTrack;
+import me.videogamesm12.omegatrack.command.AbstractOmegaTrackCommand;
+import me.videogamesm12.omegatrack.util.UUIDUtil;
 
-import java.util.UUID;
-
-public class OptInCommand extends ChatCommand
+public class OptInCommand extends AbstractOmegaTrackCommand
 {
+    public OptInCommand(final OmegaTrack omegaTrack)
+    {
+        super(omegaTrack);
+    }
+
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
-        if (sender.getUuid().equals(UUID.fromString("00000000-0000-0000-0000-000000000000")))
+        if (sender.getUuid().equals(UUIDUtil.SYSTEM_UUID))
         {
             throw new CommandException("You must be in-game to opt-in.");
         }
 
-        OmegaTrack.getFlagStorage().getFlags(sender.getUuid()).setOptedOut(false);
+        this.omegaTrack.flags.getFlags(sender.getUuid()).setOptedOut(false);
         sender.getBot().sendResponse("You will now be tracked by OmegaTrack. To start being tracked immediately, teleport to me or reconnect.", sender.getMsgSender());
     }
 

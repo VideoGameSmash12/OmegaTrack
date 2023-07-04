@@ -1,16 +1,21 @@
-package me.videogamesm12.omegatrack.command;
+package me.videogamesm12.omegatrack.command.commands;
 
-import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import me.videogamesm12.omegatrack.OmegaTrack;
+import me.videogamesm12.omegatrack.command.AbstractOmegaTrackCommand;
 
-public class ResetCommand extends ChatCommand
+public class ResetCommand extends AbstractOmegaTrackCommand
 {
+    public ResetCommand(final OmegaTrack omegaTrack)
+    {
+        super(omegaTrack);
+    }
+
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
-        OmegaTrack.getWiretap().resetBruteforcer(0);
+        this.omegaTrack.wiretap.resetBruteforcer(0);
         sender.getBot().sendResponse("Okay, I've reset the bruteforcer for you.", sender.getMsgSender());
     }
 

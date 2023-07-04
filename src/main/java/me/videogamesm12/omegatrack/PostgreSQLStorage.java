@@ -1,7 +1,9 @@
 package me.videogamesm12.omegatrack;
 
+import lombok.Getter;
 import me.videogamesm12.omegatrack.data.PositionDataset;
 import me.videogamesm12.omegatrack.storage.OTConfig;
+import me.videogamesm12.omegatrack.tasks.postgres.QueueExecutorTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
@@ -9,23 +11,25 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 public class PostgreSQLStorage extends Thread
 {
+    @Getter
     private final Queue<PositionDataset> queue = new ConcurrentLinkedQueue<>();
-    private final ScheduledExecutorService queueManager = new ScheduledThreadPoolExecutor(2);
     //--
     private Connection connection;
+    private final Timer timer;
+    private TimerTask queueExecutorTask;
 
-    public PostgreSQLStorage()
+    public PostgreSQLStorage(final Timer timer)
     {
         super("SQLStorage");
         super.start();
+        this.timer = timer;
     }
 
     @Override
@@ -54,19 +58,8 @@ public class PostgreSQLStorage extends Thread
         }
 
         // Sets up the queue now
-        queueManager.scheduleAtFixedRate(() -> {
-            for (int i = 0; i < queue.size(); i++)
-            {
-                try
-                {
-                    addSet(queue.poll());
-                }
-                catch (Exception ex)
-                {
-                    ex.printStackTrace();
-                }
-            }
-        }, 0, 100, TimeUnit.MILLISECONDS);
+        this.queueExecutorTask = new QueueExecutorTask(this);
+        this.timer.scheduleAtFixedRate(this.queueExecutorTask, 0, 100);
     }
 
     @Override
@@ -75,7 +68,10 @@ public class PostgreSQLStorage extends Thread
         // Wait until what's in memory is written to disk.
         try
         {
-            queueManager.shutdown();
+            if (this.queueExecutorTask != null)
+            {
+                this.queueExecutorTask.cancel();
+            }
             connection.close();
         }
         catch (Exception ex)
@@ -90,7 +86,7 @@ public class PostgreSQLStorage extends Thread
         queue.add(set);
     }
 
-    private void addSet(@NotNull PositionDataset set) throws SQLException
+    public void addSet(@NotNull PositionDataset set) throws SQLException
     {
         PreparedStatement statement = connection.prepareStatement(
                 "INSERT INTO coordinates (uuid, world, time, x, z) VALUES (?, ?, ?, ?, ?)");

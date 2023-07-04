@@ -4,6 +4,8 @@ import java.util.UUID;
 
 public class UUIDUtil
 {
+    public static final UUID SYSTEM_UUID = new UUID(0, 0);
+
     /**
      * Creates UUIDs using data gathered from integer arrays.
      * @param uuid  int[]
