@@ -14,7 +14,7 @@ public class SetOffsetCommand extends ChatCommand
 
         if (arg.trim().isEmpty())
         {
-            throw new CommandException("I need a number, jackass.");
+            throw new CommandException("Please provide a number.");
         }
 
         int number;
@@ -25,7 +25,7 @@ public class SetOffsetCommand extends ChatCommand
         }
         catch (Exception ex)
         {
-            throw new CommandException("Did you forget what a number was? Because '" + args[0] + " sure as heck isn't a number");
+            throw new CommandException("Illegal number provided.");
         }
 
         //OmegaTrack.WIRETAP.setCurrentId(number);
