@@ -280,7 +280,8 @@ public class Wiretap extends SessionAdapter
     {
         setCurrentBackwardsId(myId);
 
-        if (this.backwardsTimerTask != null) {
+        if (this.backwardsTimerTask != null)
+        {
             this.backwardsTimerTask.cancel();
         }
 

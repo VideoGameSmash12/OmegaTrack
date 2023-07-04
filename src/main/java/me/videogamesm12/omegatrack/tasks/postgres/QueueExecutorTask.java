@@ -10,12 +10,14 @@ public class QueueExecutorTask extends TimerTask
 {
     private final PostgreSQLStorage postgreSQLStorage;
 
-    public QueueExecutorTask(final PostgreSQLStorage postgreSQLStorage) {
+    public QueueExecutorTask(final PostgreSQLStorage postgreSQLStorage)
+    {
         this.postgreSQLStorage = postgreSQLStorage;
     }
 
     @Override
-    public void run() {
+    public void run()
+    {
         final Queue<PositionDataset> queue = this.postgreSQLStorage.getQueue();
 
         for (int i = 0; i < queue.size(); i++)
@@ -29,6 +31,5 @@ public class QueueExecutorTask extends TimerTask
                 ex.printStackTrace();
             }
         }
-
     }
 }

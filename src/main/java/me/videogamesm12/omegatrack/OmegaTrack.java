@@ -20,24 +20,29 @@ public class OmegaTrack
     public final EpsilonBot epsilonBot;
     public final Timer timer = new Timer();
 
-    public OmegaTrack(final EpsilonBot epsilonBot) throws StartFailureException {
+    public OmegaTrack(final EpsilonBot epsilonBot) throws StartFailureException
+    {
         this.epsilonBot = epsilonBot;
         this.flags = OTFlags.load(this.epsilonBot);
-        try {
+        try
+        {
             this.storage = new PostgreSQLStorage(this.timer);
-        } catch (Exception ex) {
+        } catch (Exception ex)
+        {
             throw new StartFailureException(ex);
         }
         this.wiretap = new Wiretap(this);
         this.tracker = new Tracker(this);
     }
 
-    public void start() {
+    public void start()
+    {
         this.wiretap.start();
         this.tracker.start();
     }
 
-    public void stop() {
+    public void stop()
+    {
         this.timer.cancel();
     }
 }

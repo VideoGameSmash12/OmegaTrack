@@ -2,13 +2,16 @@ package me.videogamesm12.omegatrack.tasks.wiretap;
 
 import me.videogamesm12.omegatrack.Wiretap;
 
-public class TraditionalBackwardsTimerTask extends AbstractWiretapDependentTask {
-    public TraditionalBackwardsTimerTask(final Wiretap wiretap) {
+public class TraditionalBackwardsTimerTask extends AbstractWiretapDependentTask
+{
+    public TraditionalBackwardsTimerTask(final Wiretap wiretap)
+    {
         super(wiretap);
     }
 
     @Override
-    public void run() {
+    public void run()
+    {
         // Wraps back
         if (this.wiretap.currentTraditionalBackwardsId == 0)
             cancel();

@@ -31,7 +31,8 @@ public class Tracker extends SessionAdapter
         this.trackerTask = new TrackerTask(this.omegaTrack);
     }
 
-    public void start() {
+    public void start()
+    {
         this.epsilonBot.getSession().addListener(this);
         this.timer.scheduleAtFixedRate(this.trackerTask, 0, 3000);
     }
