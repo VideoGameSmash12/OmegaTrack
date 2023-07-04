@@ -50,10 +50,18 @@ public class Tracker extends SessionAdapter
         if (packet instanceof ClientboundTagQueryPacket queryPacket
                 && queryPacket.getNbt().contains("EnderItems"))
         {
-            int[] uuid = (int[]) queryPacket.getNbt().get("UUID").getValue();
-            UUID convUuid = UUIDUtil.fromIntArray(uuid);
+            final Object uuidObject = queryPacket.getNbt().get("UUID").getValue();
+            UUID uuid;
+            if (uuidObject instanceof String string)
+            {
+                uuid = UUID.fromString(string);
+            }
+            else
+            {
+                uuid = UUIDUtil.fromIntArray((int[]) uuidObject);
+            }
 
-            if (OmegaTrack.FLAGS.getFlags(convUuid).isOptedOut())
+            if (OmegaTrack.FLAGS.getFlags(uuid).isOptedOut())
                 return;
 
             String world = (String) queryPacket.getNbt().get("Dimension").getValue();
@@ -64,7 +72,7 @@ public class Tracker extends SessionAdapter
 
             List<DoubleTag> doubles = (List<DoubleTag>) queryPacket.getNbt().get("Pos").getValue();
 
-            System.out.println("Sending " + convUuid + " to database");
+            System.out.println("Sending " + uuid + " to database");
             try
             {
                 OmegaTrack.STORAGE.queue(new PositionDataset(uuid, world, doubles.get(0).getValue(), doubles.get(2).getValue()));

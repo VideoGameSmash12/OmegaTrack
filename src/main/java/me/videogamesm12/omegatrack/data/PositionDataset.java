@@ -37,4 +37,9 @@ public class PositionDataset
     {
         this(UUIDUtil.fromIntArray(uuid), world, new Date().getTime(), x, z);
     }
+
+    public PositionDataset(UUID uuid, String world, double x, double z)
+    {
+        this(uuid, world, new Date().getTime(), x, z);
+    }
 }

@@ -136,8 +136,16 @@ public class Wiretap extends SessionAdapter
             if (isLinked(id))
                 return;
 
-            int[] rawUuid = (int[]) tagQuery.getNbt().get("UUID").getValue();
-            UUID uuid = UUIDUtil.fromIntArray(rawUuid);
+            final Object uuidObject = tagQuery.getNbt().get("UUID").getValue();
+            UUID uuid;
+            if (uuidObject instanceof String string)
+            {
+                uuid = UUID.fromString(string);
+            }
+            else
+            {
+                uuid = UUIDUtil.fromIntArray((int[]) uuidObject);
+            }
 
             // Refuse to link entities that are already linked somewhere else or have opted out of being tracked
             if (!isLinked(uuid))
