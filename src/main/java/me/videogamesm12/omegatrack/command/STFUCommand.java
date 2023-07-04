@@ -5,15 +5,14 @@ import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import me.videogamesm12.omegatrack.OmegaTrack;
 import me.videogamesm12.omegatrack.storage.OTFlags;
-
-import java.util.UUID;
+import me.videogamesm12.omegatrack.util.UUIDUtil;
 
 public class STFUCommand extends ChatCommand
 {
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
-        if (sender.getUuid().equals(UUID.fromString("00000000-0000-0000-0000-000000000000")))
+        if (sender.getUuid().equals(UUIDUtil.SYSTEM_UUID))
         {
             throw new CommandException("You must be in-game to do this.");
         }
