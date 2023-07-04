@@ -1,6 +1,5 @@
 package me.videogamesm12.omegatrack.tasks.wiretap;
 
-import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import me.videogamesm12.omegatrack.Wiretap;
 
 public class TraditionalTimerTask extends AbstractWiretapDependentTask
