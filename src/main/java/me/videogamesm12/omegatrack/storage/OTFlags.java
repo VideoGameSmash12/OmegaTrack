@@ -16,7 +16,7 @@ public class OTFlags
 {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File STORAGE = new File("flags.json");
-    private final EpsilonBot epsilonBot;
+    private final transient EpsilonBot epsilonBot;
 
     public OTFlags(final EpsilonBot epsilonBot)
     {
