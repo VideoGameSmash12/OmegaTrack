@@ -15,12 +15,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 
 public class PostgreSQLStorage extends Thread
 {
     @Getter
-    private Queue<PositionDataset> queue = new ConcurrentLinkedQueue<>();
+    private final Queue<PositionDataset> queue = new ConcurrentLinkedQueue<>();
     //--
     private Connection connection;
     private final Timer timer;
@@ -85,11 +84,6 @@ public class PostgreSQLStorage extends Thread
     public void queue(PositionDataset set)
     {
         queue.add(set);
-    }
-
-    public void sendStatement(String statement) throws SQLException
-    {
-        connection.prepareStatement(statement).execute();
     }
 
     public void addSet(@NotNull PositionDataset set) throws SQLException

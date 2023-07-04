@@ -1,6 +1,5 @@
 package me.videogamesm12.omegatrack.command.commands;
 
-import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import me.videogamesm12.omegatrack.OmegaTrack;
@@ -16,7 +15,9 @@ public class WTCommand extends AbstractOmegaTrackCommand
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
-        sender.getBot().sendResponse("Traditional ID #" + this.omegaTrack.wiretap.getCurrentTraditionalId() + ". Backwards ID #" + this.omegaTrack.wiretap.getCurrentBackwardsId() + ". " + this.omegaTrack.wiretap.getUuids().size() + " player(s) have been indexed.", sender.getMsgSender());
+        sender.getBot().sendResponse("Traditional ID #" + this.omegaTrack.wiretap.getCurrentTraditionalId()
+                + ". Backwards ID #" + this.omegaTrack.wiretap.getCurrentBackwardsId() + ". "
+                + this.omegaTrack.wiretap.getUuids().size() + " player(s) have been indexed.", sender.getMsgSender());
     }
 
     @Override

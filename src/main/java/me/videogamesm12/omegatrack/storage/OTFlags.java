@@ -15,7 +15,7 @@ import java.util.UUID;
 public class OTFlags
 {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static File STORAGE = new File("flags.json");
+    private static final File STORAGE = new File("flags.json");
     private final EpsilonBot epsilonBot;
 
     public OTFlags(final EpsilonBot epsilonBot)

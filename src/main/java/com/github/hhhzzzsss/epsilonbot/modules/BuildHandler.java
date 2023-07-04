@@ -1,11 +1,7 @@
 package com.github.hhhzzzsss.epsilonbot.modules;
 
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
-import com.github.hhhzzzsss.epsilonbot.block.Section;
 import com.github.hhhzzzsss.epsilonbot.build.BuilderSession;
-import com.github.hhhzzzsss.epsilonbot.buildsync.Plot;
-import com.github.hhhzzzsss.epsilonbot.buildsync.PlotBuilderSession;
-import com.github.hhhzzzsss.epsilonbot.buildsync.PlotManager;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import com.github.hhhzzzsss.epsilonbot.listeners.DisconnectListener;
 import com.github.hhhzzzsss.epsilonbot.listeners.PacketListener;
@@ -57,7 +53,6 @@ public class BuildHandler implements TickListener, PacketListener, DisconnectLis
             long currentTime = System.currentTimeMillis();
             if (currentTime > nextBuildCheckTime) {
                 checkMapart();
-                if (builderSession == null) checkPlots();
                 nextBuildCheckTime = currentTime + BUILD_CHECK_DELAY;
             }
         } else {
@@ -65,18 +60,6 @@ public class BuildHandler implements TickListener, PacketListener, DisconnectLis
                 builderSession.onAction();
                 actionQuota--;
                 if (builderSession.isStopped()) {
-                    if (builderSession instanceof PlotBuilderSession) {
-                        PlotBuilderSession plotBuilderSession = (PlotBuilderSession) builderSession;
-                        PlotManager.getBuildStatus(plotBuilderSession.plotCoord).inProgress = false;
-                        if (plotBuilderSession.isFinished()) {
-                            PlotManager.getBuildStatus(plotBuilderSession.plotCoord).built = true;
-                        }
-                        try {
-                            PlotManager.saveBuildStatus();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
                     builderSession = null;
                 }
             }
@@ -119,40 +102,6 @@ public class BuildHandler implements TickListener, PacketListener, DisconnectLis
     }
 
     private void checkPlots() {
-        List<Plot> sortedPlots = PlotManager.getPlotMap().values()
-                .stream()
-                .sorted((p1, p2) -> {
-                    if (p1.getX() == p2.getX()) {
-                        return Integer.compare(p1.getZ(), p2.getZ());
-                    } else {
-                        return Integer.compare(p1.getX(), p2.getX());
-                    }
-                })
-                .collect(Collectors.toList());
-        for (Plot plot : sortedPlots) {
-            if (plot.isSaved() && PlotManager.getBuildStatus(plot.pos).isInProgress()) {
-                loadPlot(plot);
-                return;
-            }
-        }
-        for (Plot plot : sortedPlots) {
-            if (plot.isSaved() && !PlotManager.getBuildStatus(plot.pos).isBuilt()) {
-                loadPlot(plot);
-                return;
-            }
-        }
-    }
-
-    private void loadPlot(Plot plot) {
-        try {
-            PlotManager.getBuildStatus(plot.pos).setInProgress(true);
-            PlotManager.saveBuildStatus();
-            Section section = PlotManager.loadSchem(plot.pos);
-            String name = plot.getName();
-            setBuilderSession(new PlotBuilderSession(bot, section, plot.pos, name));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     private void checkMapart() {

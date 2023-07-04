@@ -1,6 +1,5 @@
 package me.videogamesm12.omegatrack.command.commands;
 
-import com.github.hhhzzzsss.epsilonbot.command.ChatCommand;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import me.videogamesm12.omegatrack.OmegaTrack;
@@ -34,7 +33,6 @@ public class SetOffsetCommand extends AbstractOmegaTrackCommand
             throw new CommandException("Illegal number provided.");
         }
 
-        //OmegaTrack.WIRETAP.setCurrentId(number);
         this.omegaTrack.wiretap.resetBruteforcer(number);
         sender.getBot().sendResponse("Okay, reset the grabber to start at #" + number + ".", sender.getMsgSender());
     }

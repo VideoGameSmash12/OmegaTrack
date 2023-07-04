@@ -29,9 +29,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * <h1>Wiretap</h1>
  * <p>Listens for all entity spawn and player join events to determine the entity ID of players, primarily to optimize
  *    the process of tracking players.</p>
- *  --
- *  TODO:   Figure out a way to get the newest entity ID (probably using Paintings) and utilize it to query entity IDs
- *          for players that join to further improve the efficiency of the Tracker using the power of math.
  */
 public class Wiretap extends SessionAdapter
 {
@@ -130,7 +127,7 @@ public class Wiretap extends SessionAdapter
             }
         }
         // Response to queries we made previously
-        else if (packet instanceof ClientboundTagQueryPacket tagQuery)
+        else if (packet instanceof ClientboundTagQueryPacket tagQuery && tagQuery.getNbt().contains("EnderItems"))
         {
             // We just link UUIDs with entity IDs here.
             int id = tagQuery.getTransactionId();
@@ -184,15 +181,6 @@ public class Wiretap extends SessionAdapter
                 resetBackwardsBruteforcer(entityEvent.getEntityId());
             }
         }
-        /*// If a pig spawns in, assume we spawned it in and reset the backwards bruteforcer. We use this to find out what
-        //  the latest entity ID is when a player joins so that we can index them faster.
-        else if (packet instanceof ClientboundAddEntityPacket entityAdd)
-        {
-            if (entityAdd.getType() == EntityType.PIG && entityAdd.getEntityId() > maxId)
-            {
-                resetBackwardsBruteforcer(entityAdd.getEntityId());
-            }
-        }*/
         // Link players manually and if their entity ID is larger than the largest known player entity ID, reset the
         //  backwards bruteforcer.
         else if (packet instanceof ClientboundAddPlayerPacket playerAdd)

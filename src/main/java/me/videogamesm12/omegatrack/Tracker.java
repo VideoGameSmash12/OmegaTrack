@@ -42,31 +42,39 @@ public class Tracker extends SessionAdapter
         if (packet instanceof ClientboundTagQueryPacket queryPacket
                 && queryPacket.getNbt().contains("EnderItems"))
         {
+            // Gets the user's UUID
             final Object uuidObject = queryPacket.getNbt().get("UUID").getValue();
-            UUID uuid;
+            final UUID uuid;
+
+            // For compatibility with Delta
             if (uuidObject instanceof String string)
             {
                 uuid = UUID.fromString(string);
             }
+            // For unpatched servers
             else
             {
                 uuid = UUIDUtil.fromIntArray((int[]) uuidObject);
             }
 
+            // Players who are not opted-in should not be tracked.
             if (this.omegaTrack.flags.getFlags(uuid).isOptedOut())
                 return;
 
-            String world = (String) queryPacket.getNbt().get("Dimension").getValue();
-            Object posRaw = queryPacket.getNbt().get("Pos").getValue();
+            final String world = (String) queryPacket.getNbt().get("Dimension").getValue();
+            final Object posRaw = queryPacket.getNbt().get("Pos").getValue();
 
+            // Prevents non-list position coordinates from being indexed (primarily because we don't know what it is)
             if (!(posRaw instanceof ArrayList))
                 return;
 
-            List<DoubleTag> doubles = (List<DoubleTag>) queryPacket.getNbt().get("Pos").getValue();
+            // Extracts the position from the NBT
+            final List<DoubleTag> doubles = (List<DoubleTag>) queryPacket.getNbt().get("Pos").getValue();
 
             System.out.println("Sending " + uuid + " to database");
             try
             {
+                // Queues the dataset to be sent to the database
                 this.omegaTrack.storage.queue(new PositionDataset(uuid, world, doubles.get(0).getValue(), doubles.get(2).getValue()));
             }
             catch (Throwable ex)

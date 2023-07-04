@@ -23,12 +23,9 @@ public class OmegaTrack
     public OmegaTrack(final EpsilonBot epsilonBot) throws StartFailureException {
         this.epsilonBot = epsilonBot;
         this.flags = OTFlags.load(this.epsilonBot);
-        try
-        {
+        try {
             this.storage = new PostgreSQLStorage(this.timer);
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             throw new StartFailureException(ex);
         }
         this.wiretap = new Wiretap(this);
