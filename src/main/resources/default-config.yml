@@ -12,3 +12,4 @@ alternatePrefixes: []
 warpName: epsilon_mapart
 trusted:
   - 5752bde5-bbf7-46e7-8352-59a9d5bc3c2f
+nonPMCommandsEnabled: true

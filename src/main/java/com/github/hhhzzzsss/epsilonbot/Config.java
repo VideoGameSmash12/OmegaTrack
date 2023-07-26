@@ -31,6 +31,7 @@ public class Config {
     ArrayList<String> alternatePrefixes;
     String warpName = "epsilon_mapart";
     ArrayList<String> trusted;
+    boolean nonPMCommandsEnabled;
 
     static {
         if (!file.exists()) {

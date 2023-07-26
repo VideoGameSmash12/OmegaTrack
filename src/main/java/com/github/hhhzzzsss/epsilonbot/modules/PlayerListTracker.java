@@ -1,6 +1,5 @@
 package com.github.hhhzzzsss.epsilonbot.modules;
 
-import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.hhhzzzsss.epsilonbot.listeners.DisconnectListener;
 import com.github.hhhzzzsss.epsilonbot.listeners.PacketListener;
 import com.github.steveice10.mc.auth.data.GameProfile;
@@ -23,6 +22,7 @@ import java.util.UUID;
 public class PlayerListTracker implements PacketListener, DisconnectListener {
 
 	@Getter private final HashMap<UUID, PlayerData> playerList = new HashMap<>();
+	@Getter private final HashMap<String, UUID> uuidMap = new HashMap<>();
 
 	@Override
 	public void onPacket(Packet packet) {
@@ -32,6 +32,7 @@ public class PlayerListTracker implements PacketListener, DisconnectListener {
         		UUID uuid = entry.getProfile().getId();
 				if (t_packet.getAction() == PlayerListEntryAction.ADD_PLAYER) {
             		playerList.put(uuid, PlayerData.fromEntry(entry));
+					uuidMap.put(entry.getProfile().getName(), entry.getProfile().getId());
 				}
 				else if (!playerList.containsKey(uuid)) {
 					//System.err.println("Server tried to modify nonexistent player entry! This should not happen.");
@@ -48,6 +49,7 @@ public class PlayerListTracker implements PacketListener, DisconnectListener {
 				}
 				else if (t_packet.getAction() == PlayerListEntryAction.REMOVE_PLAYER) {
 					playerList.remove(uuid);
+					uuidMap.remove(entry.getProfile().getName());
 				}
         	}
 		}

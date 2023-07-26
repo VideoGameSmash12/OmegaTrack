@@ -19,18 +19,10 @@ import java.util.stream.Collectors;
 public class ProfileUtils {
     public static Gson gson = new Gson();
 
-//    @Data
-//    public static class UsernameHistoryEntry {
-//        String username;
-//        @SerializedName("changed_at")
-//        String changedAt;;
-//    }
     @Data
     public static class PlayerProfileResponse {
         UUID uuid = null;
         String username = null;
-//        @SerializedName("username_history")
-//        ArrayList<UsernameHistoryEntry> usernameHistory;
     }
     public static PlayerProfileResponse getPlayerProfile(String identifier) throws IOException, NoSuchAlgorithmException, KeyManagementException {
         URL url = new URL("https://api.ashcon.app/mojang/v2/user/" + identifier);

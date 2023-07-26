@@ -5,12 +5,17 @@ import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.hhhzzzsss.epsilonbot.command.*;
 import com.github.hhhzzzsss.epsilonbot.listeners.PacketListener;
 import com.github.hhhzzzsss.epsilonbot.util.ChatUtils;
+import com.github.hhhzzzsss.epsilonbot.util.ProfileUtils;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundChatPacket;
 import com.github.steveice10.packetlib.packet.Packet;
 import lombok.Getter;
+import me.videogamesm12.omegatrack.OmegaTrack;
+import me.videogamesm12.omegatrack.util.UUIDUtil;
 import net.kyori.adventure.text.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,7 +28,7 @@ public class ChatCommandHandler implements PacketListener {
 	@Getter private Pattern msgCommandPattern;
 	@Getter private Pattern chatCommandPattern;
 	@Getter private Pattern discordCommandPattern;
-	
+
 	public ChatCommandHandler(EpsilonBot bot, CommandList commandList, String prefix, ArrayList<String> alternatePrefixes) {
 		this.bot = bot;
 		this.commandList = commandList;
@@ -53,12 +58,22 @@ public class ChatCommandHandler implements PacketListener {
 					return;
 				}
 				msgSender = m.group(1);
+				if (bot.getPlayerListTracker().getUuidMap().containsKey(msgSender))
+				{
+					uuid = bot.getPlayerListTracker().getUuidMap().get(msgSender);
+				}
 				command = m.group(3);
 				args = m.group(4);
 			} else if ((m = chatCommandPattern.matcher(strMessage)).matches()) {
+				if (!Config.getConfig().isNonPMCommandsEnabled()) {
+					return;
+				}
 				command = m.group(1);
 				args = m.group(2).trim();
 			} else if ((m = discordCommandPattern.matcher(strMessage)).matches()) {
+				if (!Config.getConfig().isNonPMCommandsEnabled()) {
+					return;
+				}
 				command = m.group(1);
 				args = m.group(2).trim();
 			} else {
@@ -102,7 +117,7 @@ public class ChatCommandHandler implements PacketListener {
 	}
 
 	/**
-	 * Sets the prefix and compiles the a new command pattern using this prefix
+	 * Sets the prefix and compiles a new command pattern using this prefix
 	 *
 	 * @param prefix The command prefix
 	 */
