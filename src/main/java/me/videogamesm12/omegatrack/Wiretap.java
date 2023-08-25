@@ -4,7 +4,8 @@ import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
 import com.github.steveice10.mc.protocol.data.game.entity.EntityEvent;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerInfoPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerInfoRemovePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerInfoUpdatePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundEntityEventPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddPlayerPacket;
@@ -176,7 +177,7 @@ public class Wiretap extends SessionAdapter
         //  find out what the latest entity ID is when a player joins so that we can index them faster.
         else if (packet instanceof ClientboundEntityEventPacket entityEvent)
         {
-            if (entityEvent.getStatus() == EntityEvent.LIVING_DEATH && entityEvent.getEntityId() > maxId)
+            if (entityEvent.getEvent() == EntityEvent.LIVING_DEATH && entityEvent.getEntityId() > maxId)
             {
                 resetBackwardsBruteforcer(entityEvent.getEntityId());
             }
@@ -208,49 +209,53 @@ public class Wiretap extends SessionAdapter
             }
         }
         // Perform certain actions when a player joins or leaves the server
-        else if (packet instanceof ClientboundPlayerInfoPacket playerInfo)
+        else if (packet instanceof ClientboundPlayerInfoUpdatePacket playerInfo)
         {
-            // Begin tracking the player and notify them of such if they opted in
-            if (playerInfo.getAction() == PlayerListEntryAction.ADD_PLAYER)
+            // Begin tracking the players and notify them of such if they opted in
+            if (playerInfo.getActions().contains(PlayerListEntryAction.ADD_PLAYER))
             {
-                final UUID uuid = playerInfo.getEntries()[0].getProfile().getId();
-                final OTFlags.UserFlags flags = this.omegaTrack.flags.getFlags(uuid);
-
-                // If they are opted-in...
-                if (!flags.isOptedOut())
+                Arrays.stream(playerInfo.getEntries()).forEach(entry ->
                 {
-                    // Remind them that this is the case
-                    if (!flags.isSupposedToShutUp())
+                    final UUID uuid = entry.getProfile().getId();
+                    final OTFlags.UserFlags flags = this.omegaTrack.flags.getFlags(uuid);
+
+                    // If they are opted-in...
+                    if (!flags.isOptedOut())
                     {
-                        this.epsilonBot.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to "
-                                + "being tracked by OmegaTrack. If you wish for this to stop, use the command !optout. "
-                                + "To disable messages like these, use the !stfu command.");
+                        // Remind them that this is the case
+                        if (!flags.isSupposedToShutUp())
+                        {
+                            this.epsilonBot.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to "
+                                    + "being tracked by OmegaTrack. If you wish for this to stop, use the command !optout. "
+                                    + "To disable messages like these, use the !stfu command.");
+                        }
+
+                        // Attempt to find the latest entity ID by spawning in a Pig
+                        this.epsilonBot.sendCommand("/spawnmob pig 1");
                     }
-
-                    // Attempt to find the latest entity ID by spawning in a Pig
-                    this.epsilonBot.sendCommand("/spawnmob pig 1");
-                }
+                });
             }
-            // Unlink players that leave the server
-            else if (playerInfo.getAction() == PlayerListEntryAction.REMOVE_PLAYER)
+        }
+        // Perform certain actions when a player leaves the server
+        else if (packet instanceof ClientboundPlayerInfoRemovePacket remove)
+        {
+            // For every player that left...
+            remove.getProfileIds().forEach(entry ->
             {
-                // Get the UUID of the player that left
-                final UUID uuid = playerInfo.getEntries()[0].getProfile().getId();
-
-                if (!isLinked(uuid))
+                if (!isLinked(entry))
                     return;
 
-                int numeric = uuids.get(uuid);
+                int numeric = uuids.get(entry);
 
                 // Unlinks the player - Note that this may cause issues with admins that vanish, which is why we grabbed
                 //                      the entity ID beforehand so that we can simply re-register them in case they are
                 //                      on the server still
-                unlink(uuid);
+                unlink(entry);
 
                 // Circumvents vanished admins being present still by simply checking if the player is actually still on
                 //  the server.
                 doWiretapQuery(numeric);
-            }
+            });
         }
     }
 

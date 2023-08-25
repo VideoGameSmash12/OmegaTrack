@@ -160,6 +160,9 @@ public class MapartBuilderSession extends BuilderSession {
                     e.printStackTrace();
                 }
 
+                bot.getWorld().sequence = 0;
+                bot.getWorld().sequenceMap.clear();
+
                 String warpName = Config.getConfig().getWarpName();
                 if (!warpName.equals("")) {
                     if (requester == null) {
@@ -366,14 +369,14 @@ public class MapartBuilderSession extends BuilderSession {
             int totalBlocks = 128*129*numTiles;
             int totalProgress = 128*129*tileIndex + tileProgress;
             sendFunc.accept(String.format(
-                    "This mapart requires %d block placements in total, and I've placed about %d of them so far, so I'm about %.2f%% done.",
-                    totalBlocks,
+                    "%d/%d blocks placed (%.2f%%)",
                     totalProgress,
+                    totalBlocks,
                     (double) totalProgress / totalBlocks * 100.0
             ));
         } else {
             sendFunc.accept(String.format(
-                    "I've finished building but I need to double check the mapart for errors. I'm currently checking tile %d/%d.",
+                    "Checking tiles for errors: %d/%d.",
                     tileIndex-numTiles+1,
                     numTiles
             ));

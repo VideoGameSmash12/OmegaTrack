@@ -2,15 +2,19 @@ package com.github.hhhzzzsss.epsilonbot.modules;
 
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.hhhzzzsss.epsilonbot.listeners.*;
+import com.github.hhhzzzsss.epsilonbot.util.ChatUtils;
 import com.github.steveice10.mc.protocol.data.game.ClientCommand;
 import com.github.steveice10.mc.protocol.data.game.command.CommandNode;
 import com.github.steveice10.mc.protocol.data.game.entity.EntityEvent;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
 import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
+import com.github.steveice10.mc.protocol.data.game.entity.player.HandPreference;
 import com.github.steveice10.mc.protocol.data.game.inventory.ClickItemAction;
 import com.github.steveice10.mc.protocol.data.game.inventory.ContainerActionType;
 import com.github.steveice10.mc.protocol.data.game.level.notify.GameEvent;
+import com.github.steveice10.mc.protocol.data.game.setting.ChatVisibility;
+import com.github.steveice10.mc.protocol.data.game.setting.SkinPart;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundCommandsPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundRespawnPacket;
@@ -19,6 +23,7 @@ import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.player
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundOpenScreenPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundGameEventPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundClientCommandPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundClientInformationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClickPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundSetCarriedItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundUseItemPacket;
@@ -28,6 +33,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
 @RequiredArgsConstructor
@@ -67,15 +74,26 @@ public class StateManager implements PacketListener, TickListener, DisconnectLis
 			entityId = t_packet.getEntityId();
 			gamemode = t_packet.getGameMode();
 			worldName = t_packet.getWorldName();
-			System.out.println(worldName);
+
+			// Send client information
+			List<SkinPart> skinParts = new ArrayList<>();
+			skinParts.add(SkinPart.CAPE);
+			skinParts.add(SkinPart.JACKET);
+			skinParts.add(SkinPart.LEFT_SLEEVE);
+			skinParts.add(SkinPart.RIGHT_SLEEVE);
+			skinParts.add(SkinPart.LEFT_PANTS_LEG);
+			skinParts.add(SkinPart.RIGHT_PANTS_LEG);
+			skinParts.add(SkinPart.HAT);
+			bot.sendPacket(new ServerboundClientInformationPacket(
+					"en-us", 16, ChatVisibility.FULL, true, skinParts, HandPreference.RIGHT_HAND, false, true));
 		}
 		else if (packet instanceof ClientboundEntityEventPacket) {
 			ClientboundEntityEventPacket t_packet = (ClientboundEntityEventPacket) packet;
 			if (t_packet.getEntityId() == entityId) {
-				if (t_packet.getStatus() == EntityEvent.PLAYER_OP_PERMISSION_LEVEL_0) {
+				if (t_packet.getEvent() == EntityEvent.PLAYER_OP_PERMISSION_LEVEL_0) {
 					opped = false;
 				}
-				else if (t_packet.getStatus() == EntityEvent.PLAYER_OP_PERMISSION_LEVEL_4) {
+				else if (t_packet.getEvent() == EntityEvent.PLAYER_OP_PERMISSION_LEVEL_4) {
 					opped = true;
 				}
 			}
@@ -84,7 +102,6 @@ public class StateManager implements PacketListener, TickListener, DisconnectLis
 			ClientboundRespawnPacket t_packet = (ClientboundRespawnPacket) packet;
 			gamemode = t_packet.getGamemode();
 			worldName = t_packet.getWorldName();
-			System.out.println(worldName);
 		}
 		else if (packet instanceof ClientboundCommandsPacket) {
 			ClientboundCommandsPacket t_packet = (ClientboundCommandsPacket) packet;
@@ -109,7 +126,7 @@ public class StateManager implements PacketListener, TickListener, DisconnectLis
 			}
 		} else if (packet instanceof ClientboundOpenScreenPacket) {
 			ClientboundOpenScreenPacket t_packet = (ClientboundOpenScreenPacket) packet;
-			if (!onFreedomServer && t_packet.getName().contains("Server Selector")) {
+			if (!onFreedomServer && ChatUtils.getFullText(t_packet.getTitle()).contains("Server Selector")) {
 				bot.sendPacket(new ServerboundContainerClickPacket(
 						t_packet.getContainerId(),
 						0,
@@ -146,7 +163,7 @@ public class StateManager implements PacketListener, TickListener, DisconnectLis
 		nextRectifyTime = currentTime;
 		if (!onFreedomServer && currentTime >= nextServerJoinTime) {
 			bot.sendPacket(new ServerboundSetCarriedItemPacket(0));
-			bot.sendPacket(new ServerboundUseItemPacket(Hand.MAIN_HAND));
+			bot.sendPacket(new ServerboundUseItemPacket(Hand.MAIN_HAND, 0));
 			if (currentTime-lastTimeOnServer > 10*1000) {
 				nextServerJoinTime = currentTime + 10*1000;
 			}
