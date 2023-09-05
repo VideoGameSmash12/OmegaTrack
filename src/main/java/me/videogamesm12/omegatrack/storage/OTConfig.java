@@ -1,5 +1,6 @@
 package me.videogamesm12.omegatrack.storage;
 
+import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
 import com.google.gson.Gson;
 import lombok.Data;
 import lombok.Getter;
@@ -66,8 +67,8 @@ public class OTConfig
     public static class WiretapConfig
     {
         /**
-         * If set to true, the bot will not reset the backwards bruteforcer if an entity that isn't a pig spawns in
+         * If set to true, the bot will not reset the backwards bruteforcer if an entity that isn't a squid spawns in
          */
-        private boolean anythingButPigsIgnoredOnSpawn = true;
+        private boolean anythingButSquidsIgnoredOnSpawn = true;
     }
 }

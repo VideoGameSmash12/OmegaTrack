@@ -180,7 +180,7 @@ public class Wiretap extends SessionAdapter
         //  use this to find out what the latest entity ID is when a player joins so that we can index them faster.
         else if (packet instanceof ClientboundAddEntityPacket addEntity)
         {
-            if ((!OTConfig.INSTANCE.getWiretap().isAnythingButPigsIgnoredOnSpawn() || addEntity.getType() == EntityType.PIG)
+            if ((!OTConfig.INSTANCE.getWiretap().isAnythingButSquidsIgnoredOnSpawn() || addEntity.getType() == EntityType.SQUID)
                     && addEntity.getEntityId() > maxId)
             {
                 resetBackwardsBruteforcer(addEntity.getEntityId());
@@ -244,7 +244,7 @@ public class Wiretap extends SessionAdapter
                         }
 
                         // Attempt to find the latest entity ID by spawning in a Pig
-                        this.epsilonBot.sendCommand("/spawnmob pig 1");
+                        this.epsilonBot.sendCommand("/spawnmob squid 1");
                     }
                 });
             }

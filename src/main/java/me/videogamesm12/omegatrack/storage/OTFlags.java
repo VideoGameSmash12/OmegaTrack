@@ -4,6 +4,7 @@ import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.Data;
+import me.videogamesm12.omegatrack.util.UUIDUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -45,6 +46,11 @@ public class OTFlags
     @NotNull
     public UserFlags getFlags(UUID uuid)
     {
+        // If the UUID is null, then assume it only has system flags. This is a workaround for some weird bug that keeps
+        //  preventing the bot from starting up after a proper shutdown and I have zero clue why it's happening
+        if (uuid == null)
+            uuid = UUIDUtil.SYSTEM_UUID;
+
         if (!userFlags.containsKey(uuid))
             userFlags.put(uuid, new UserFlags());
 
