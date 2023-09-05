@@ -173,6 +173,7 @@ public class Wiretap extends SessionAdapter
 
             if (maximum > maxId)
             {
+                maxId = maximum;
                 resetBackwardsBruteforcer(maximum);
             }
         }
@@ -183,6 +184,7 @@ public class Wiretap extends SessionAdapter
             if ((!OTConfig.INSTANCE.getWiretap().isAnythingButSquidsIgnoredOnSpawn() || addEntity.getType() == EntityType.SQUID)
                     && addEntity.getEntityId() > maxId)
             {
+                maxId = addEntity.getEntityId();
                 resetBackwardsBruteforcer(addEntity.getEntityId());
             }
         }
@@ -192,6 +194,7 @@ public class Wiretap extends SessionAdapter
         {
             if (entityEvent.getEvent() == EntityEvent.LIVING_DEATH && entityEvent.getEntityId() > maxId)
             {
+                maxId = entityEvent.getEntityId();
                 resetBackwardsBruteforcer(entityEvent.getEntityId());
             }
         }
