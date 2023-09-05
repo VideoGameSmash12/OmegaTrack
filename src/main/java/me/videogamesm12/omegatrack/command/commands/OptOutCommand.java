@@ -27,12 +27,12 @@ public class OptOutCommand extends AbstractOmegaTrackCommand
 
         try
         {
-            sender.getBot().sendCommand("/tell " + sender.getMsgSender() + " Deleting coordinate data connected to you...");
+            sender.getBot().sendCommand("/tell " + sender.getUuid() + " Deleting coordinate data connected to you...");
             this.omegaTrack.storage.dropCoordinatesByUuid(sender.getUuid());
         }
         catch (SQLException e)
         {
-            sender.getBot().sendCommand("/tell " + sender.getMsgSender() + " There was a problem whilst trying to delete coordinate data connected to you. Please contact the maintainer of this bot (videogamesm12) &oimmediately&f.");
+            sender.getBot().sendCommand("/tell " + sender.getUuid() + " There was a problem whilst trying to delete coordinate data connected to you. Please contact the maintainer of this bot (videogamesm12) &oimmediately&f.");
             e.printStackTrace();
         }
 

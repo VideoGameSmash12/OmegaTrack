@@ -38,19 +38,21 @@ public class PostgreSQLStorage extends Thread
         try
         {
             System.out.println("Connecting to " + String.format(
-                    "jdbc:postgresql://%s:%s/omegatrack",
-                    OTConfig.INSTANCE.getSqlIp(),
-                    OTConfig.INSTANCE.getSqlPort()
+                    "jdbc:postgresql://%s:%s/%s",
+                    OTConfig.INSTANCE.getSql().getIp(),
+                    OTConfig.INSTANCE.getSql().getPort(),
+                    OTConfig.INSTANCE.getSql().getDatabase()
             ));
             Class.forName("org.postgresql.Driver");
             connection = DriverManager.getConnection(
                     String.format(
-                            "jdbc:postgresql://%s:%s/omegatrack",
-                            OTConfig.INSTANCE.getSqlIp(),
-                            OTConfig.INSTANCE.getSqlPort()
+                            "jdbc:postgresql://%s:%s/%s",
+                            OTConfig.INSTANCE.getSql().getIp(),
+                            OTConfig.INSTANCE.getSql().getPort(),
+                            OTConfig.INSTANCE.getSql().getDatabase()
                     ),
-                    OTConfig.INSTANCE.getSqlUser(),
-                    OTConfig.INSTANCE.getSqlPassword());
+                    OTConfig.INSTANCE.getSql().getUsername(),
+                    OTConfig.INSTANCE.getSql().getPassword());
         }
         catch (Exception ex)
         {
@@ -104,8 +106,8 @@ public class PostgreSQLStorage extends Thread
 
     public void dropCoordinatesByUuid(UUID uuid) throws SQLException
     {
-        PreparedStatement statement = connection.prepareStatement(
-                "DELETE FROM coordinates where uuid = '" + uuid.toString() + "'");
+        PreparedStatement statement = connection.prepareStatement("DELETE FROM coordinates WHERE uuid = ?;");
+        statement.setString(1, uuid.toString());
         statement.execute();
     }
 }

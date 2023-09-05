@@ -1,6 +1,5 @@
 package me.videogamesm12.omegatrack.storage;
 
-import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
 import com.google.gson.Gson;
 import lombok.Data;
 import lombok.Getter;
@@ -53,21 +52,45 @@ public class OTConfig
 
     //--
 
-    public String sqlIp = "localhost";
-
-    public int sqlPort = 5432;
-
-    public String sqlUser = "alexandria";
-
-    public String sqlPassword = "alexandria";
+    public SQL sql = new SQL();
 
     public WiretapConfig wiretap = new WiretapConfig();
+
+    @Getter
+    public static class SQL
+    {
+        /**
+         * The IP address of the PostgreSQL server that we store our data at
+         */
+        private String ip = "localhost";
+
+        /**
+         * The port of the PostgreSQL server that we store our data at
+         */
+        private int port = 5432;
+
+        /**
+         * The username for the PostgreSQL user that we use to store our data
+         */
+        private String username = "alexandria";
+
+        /**
+         * The password for the PostgreSQL user that we use to store our data
+         */
+        private String password = "password";
+
+        /**
+         * The name of the database that we store our data at
+         */
+        private String database = "omegatrack";
+    }
 
     @Getter
     public static class WiretapConfig
     {
         /**
-         * If set to true, the bot will not reset the backwards bruteforcer if an entity that isn't a squid spawns in
+         * If set to true, the bot will not reset the backwards bruteforcer if an entity that isn't a squid spawns in.
+         *  This is useful for in case
          */
         private boolean anythingButSquidsIgnoredOnSpawn = true;
     }
