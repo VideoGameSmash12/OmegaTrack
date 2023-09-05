@@ -2,6 +2,7 @@ package me.videogamesm12.omegatrack.storage;
 
 import com.google.gson.Gson;
 import lombok.Data;
+import lombok.Getter;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -58,4 +59,15 @@ public class OTConfig
     public String sqlUser = "alexandria";
 
     public String sqlPassword = "alexandria";
+
+    public WiretapConfig wiretap = new WiretapConfig();
+
+    @Getter
+    public static class WiretapConfig
+    {
+        /**
+         * If set to true, the bot will not reset the backwards bruteforcer if an entity that isn't a pig spawns in
+         */
+        private boolean anythingButPigsIgnoredOnSpawn = true;
+    }
 }

@@ -3,11 +3,13 @@ package me.videogamesm12.omegatrack;
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
 import com.github.steveice10.mc.protocol.data.game.entity.EntityEvent;
+import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerInfoRemovePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerInfoUpdatePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundEntityEventPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddPlayerPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundTagQueryPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundEntityTagQuery;
@@ -16,6 +18,7 @@ import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import com.github.steveice10.packetlib.packet.Packet;
 import lombok.Getter;
 import lombok.Setter;
+import me.videogamesm12.omegatrack.storage.OTConfig;
 import me.videogamesm12.omegatrack.storage.OTFlags;
 import me.videogamesm12.omegatrack.tasks.wiretap.BackwardsTimerTask;
 import me.videogamesm12.omegatrack.tasks.wiretap.TraditionalBackwardsTimerTask;
@@ -173,8 +176,18 @@ public class Wiretap extends SessionAdapter
                 resetBackwardsBruteforcer(maximum);
             }
         }
-        // If a mob dies and its ID is higher than our known maximum ID, reset the backwards bruteforcer. We use this to
-        //  find out what the latest entity ID is when a player joins so that we can index them faster.
+        // If an entity spawns in and its ID is higher than our known maximum ID, reset the backwards bruteforcer. We
+        //  use this to find out what the latest entity ID is when a player joins so that we can index them faster.
+        else if (packet instanceof ClientboundAddEntityPacket addEntity)
+        {
+            if ((!OTConfig.INSTANCE.getWiretap().isAnythingButPigsIgnoredOnSpawn() || addEntity.getType() == EntityType.PIG)
+                    && addEntity.getEntityId() > maxId)
+            {
+                resetBackwardsBruteforcer(addEntity.getEntityId());
+            }
+        }
+        // If a mob dies and its ID is higher than our known maximum ID, reset the backwards bruteforcer. We used to use
+        //  this to find out what the latest entity ID is, but it now serves as a fallback.
         else if (packet instanceof ClientboundEntityEventPacket entityEvent)
         {
             if (entityEvent.getEvent() == EntityEvent.LIVING_DEATH && entityEvent.getEntityId() > maxId)
