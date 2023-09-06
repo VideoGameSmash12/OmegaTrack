@@ -61,7 +61,7 @@ public class PostgreSQLStorage extends Thread
 
         // Sets up the queue now
         this.queueExecutorTask = new QueueExecutorTask(this);
-        this.timer.scheduleAtFixedRate(this.queueExecutorTask, 0, 100);
+        this.timer.scheduleAtFixedRate(this.queueExecutorTask, 0, OTConfig.INSTANCE.getSql().getQueueInterval());
     }
 
     @Override

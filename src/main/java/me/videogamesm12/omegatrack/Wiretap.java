@@ -13,6 +13,9 @@ import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddPlayerPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundTagQueryPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundEntityTagQuery;
+import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
+import com.github.steveice10.opennbt.tag.builtin.IntTag;
+import com.github.steveice10.opennbt.tag.builtin.Tag;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import com.github.steveice10.packetlib.packet.Packet;
@@ -68,12 +71,19 @@ public class Wiretap extends SessionAdapter
     public void start()
     {
         this.epsilonBot.getSession().addListener(this);
+
+        // This gets sent regardless of Delta communication because we use it to send special messages.
         this.timer.scheduleAtFixedRate(this.regularTimerTask, 0, 100);
-        // Slightly throttled compared to the regular `out`, but this is to avoid spamming the server with possibly
-        //  thousands of requests per second.
-        this.timer.scheduleAtFixedRate(this.bruteForceTimerTask, 0, 333);
-        // Sets up the bruteforcer.
-        resetBruteforcer(0);
+
+        // Sets up entity brute-forcing if we are not using Delta communication
+        if (!OTConfig.INSTANCE.getGeneral().isUsingDeltaCommunication())
+        {
+            // Slightly throttled compared to the regular `out`, but this is to avoid spamming the server with possibly
+            //  thousands of requests per second.
+            this.timer.scheduleAtFixedRate(this.bruteForceTimerTask, 0, 333);
+            // Sets up the bruteforcer.
+            resetBruteforcer(0);
+        }
     }
 
     public Wiretap(final OmegaTrack omegaTrack)
@@ -114,6 +124,76 @@ public class Wiretap extends SessionAdapter
     @Override
     public void packetReceived(Session session, Packet packet)
     {
+        // Delta communication specific
+        if (OTConfig.INSTANCE.getGeneral().isUsingDeltaCommunication())
+        {
+            // Process the special response containing entity IDs of every online player.
+            if (packet instanceof ClientboundTagQueryPacket tagQuery && tagQuery.getNbt().contains("DeltaEntityIDs"))
+            {
+                final Map<String, Tag> response = tagQuery.getNbt().getValue();
+                CompoundTag uuidSet = (CompoundTag) response.get("DeltaEntityIDs");
+                uuidSet.getValue().forEach((uuid, tag) ->
+                {
+                    if (tag instanceof IntTag id && !isLinked(UUID.fromString(uuid)))
+                    {
+                        // Link the entity ID with the UUID
+                        link(id.getValue(), UUID.fromString(uuid));
+                    }
+                    else
+                    {
+                        System.out.println(tag.getValue());
+                    }
+                });
+            }
+            // Perform certain actions when a player leaves the server
+            else if (packet instanceof ClientboundPlayerInfoRemovePacket remove)
+            {
+                // For every player that left...
+                remove.getProfileIds().forEach(entry ->
+                {
+                    if (!isLinked(entry))
+                        return;
+
+                    // Unlinks the player - Note that this may cause issues with admins that vanish, which is why we grabbed
+                    //                      the entity ID beforehand so that we can simply re-register them in case they are
+                    //                      on the server still
+                    unlink(entry);
+
+                    // Circumvents vanished admins being present still
+                    outQueue.add(new ServerboundEntityTagQuery(20101111, 20140324));
+                });
+            }
+            // Perform certain actions when a player joins the server
+            else if (packet instanceof ClientboundPlayerInfoUpdatePacket playerInfo)
+            {
+                // Begin tracking the players and notify them of such if they opted in
+                if (playerInfo.getActions().contains(PlayerListEntryAction.ADD_PLAYER))
+                {
+                    Arrays.stream(playerInfo.getEntries()).forEach(entry ->
+                    {
+                        final UUID uuid = entry.getProfile().getId();
+                        final OTFlags.UserFlags flags = this.omegaTrack.flags.getFlags(uuid);
+
+                        // If they are opted-in...
+                        if (!flags.isOptedOut())
+                        {
+                            // Remind them that this is the case
+                            if (!flags.isSupposedToShutUp())
+                            {
+                                this.epsilonBot.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to "
+                                        + "being tracked by OmegaTrack. If you wish for this to stop, use the command !optout. "
+                                        + "To disable messages like these, use the !stfu command.");
+                            }
+
+                            outQueue.add(new ServerboundEntityTagQuery(20101111, 20140324));
+                        }
+                    });
+                }
+            }
+
+            return;
+        }
+
         // Self-registration as a player
         if (packet instanceof ClientboundLoginPacket login)
         {
