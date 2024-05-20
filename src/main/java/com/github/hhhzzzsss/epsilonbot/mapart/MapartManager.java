@@ -9,10 +9,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Type;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.net.URL;
 
 public class MapartManager {
     public static final Path INDEX_PATH = Path.of("mapartIndex.json");

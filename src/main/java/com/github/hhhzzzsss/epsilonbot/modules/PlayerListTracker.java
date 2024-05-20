@@ -16,7 +16,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
 
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.UUID;
@@ -34,7 +33,7 @@ public class PlayerListTracker implements PacketListener, DisconnectListener {
 			EnumSet<PlayerListEntryAction> actions = t_packet.getActions();
 
 			for (PlayerListEntry entry : t_packet.getEntries()) {
-        		UUID uuid = entry.getProfile().getId();
+        		UUID uuid = entry.getProfileId();
 				if (actions.contains(PlayerListEntryAction.ADD_PLAYER)) {
             		playerList.put(uuid, PlayerData.fromEntry(entry));
 					uuidMap.put(entry.getProfile().getName(), entry.getProfile().getId());

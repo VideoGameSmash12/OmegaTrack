@@ -11,7 +11,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.UUID;
 
 @Data
 public class Config {
@@ -35,6 +34,8 @@ public class Config {
     String trustedKey = "";
     ArrayList<String> trusted;
     boolean nonPMCommandsEnabled;
+    String personalityServerHost = "http://localhost:8854";
+    String personalityServerAuthToken = "put_token_here";
 
     static {
         if (!file.exists()) {

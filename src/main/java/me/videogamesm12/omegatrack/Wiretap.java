@@ -10,7 +10,6 @@ import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPl
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundEntityEventPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddPlayerPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundTagQueryPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundEntityTagQuery;
 import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
@@ -261,7 +260,31 @@ public class Wiretap extends SessionAdapter
         //  use this to find out what the latest entity ID is when a player joins so that we can index them faster.
         else if (packet instanceof ClientboundAddEntityPacket addEntity)
         {
-            if ((!OTConfig.INSTANCE.getWiretap().isAnythingButSquidsIgnoredOnSpawn() || addEntity.getType() == EntityType.SQUID)
+            if (addEntity.getType() == EntityType.PLAYER)
+            {
+                // Link ourselves because we know our current entity ID
+                if (addEntity.getUuid().equals(this.epsilonBot.getUuid()))
+                {
+                    link(addEntity.getEntityId(), this.epsilonBot.getUuid());
+                    resetBackwardsBruteforcer(addEntity.getEntityId());
+                }
+                // Manually link the entity ID with the UUID, bypassing brute-forcing attempts entirely
+                else
+                {
+                    int id = addEntity.getEntityId();
+                    UUID uuid = addEntity.getUuid();
+
+                    link(id, uuid);
+
+                    // Reset the backwards bruteforcer if the max ID is less than the ID of the player that teleported to you
+                    if (maxId < id)
+                    {
+                        maxId = id;
+                        resetBackwardsBruteforcer(id);
+                    }
+                }
+            }
+            else if ((!OTConfig.INSTANCE.getWiretap().isAnythingButSquidsIgnoredOnSpawn() || addEntity.getType() == EntityType.SQUID)
                     && addEntity.getEntityId() > maxId)
             {
                 maxId = addEntity.getEntityId();
@@ -276,32 +299,6 @@ public class Wiretap extends SessionAdapter
             {
                 maxId = entityEvent.getEntityId();
                 resetBackwardsBruteforcer(entityEvent.getEntityId());
-            }
-        }
-        // Link players manually and if their entity ID is larger than the largest known player entity ID, reset the
-        //  backwards bruteforcer.
-        else if (packet instanceof ClientboundAddPlayerPacket playerAdd)
-        {
-            // Link ourselves because we know our current entity ID
-            if (playerAdd.getUuid().equals(this.epsilonBot.getUuid()))
-            {
-                link(playerAdd.getEntityId(), this.epsilonBot.getUuid());
-                resetBackwardsBruteforcer(playerAdd.getEntityId());
-            }
-            // Manually link the entity ID with the UUID, bypassing brute-forcing attempts entirely
-            else
-            {
-                int id = playerAdd.getEntityId();
-                UUID uuid = playerAdd.getUuid();
-
-                link(id, uuid);
-
-                // Reset the backwards bruteforcer if the max ID is less than the ID of the player that teleported to you
-                if (maxId < id)
-                {
-                    maxId = id;
-                    resetBackwardsBruteforcer(id);
-                }
             }
         }
         // Perform certain actions when a player joins or leaves the server

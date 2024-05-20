@@ -10,11 +10,8 @@ import com.github.hhhzzzsss.epsilonbot.modules.*;
 import com.github.hhhzzzsss.epsilonbot.util.Auth;
 import com.github.hhhzzzsss.epsilonbot.util.ChatUtils;
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
-import com.github.steveice10.mc.protocol.data.game.setting.ChatVisibility;
-import com.github.steveice10.mc.protocol.data.game.setting.SkinPart;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundChatPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundClientInformationPacket;
 import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundGameProfilePacket;
 import com.github.steveice10.packetlib.ProxyInfo;
 import com.github.steveice10.packetlib.Session;
@@ -63,11 +60,12 @@ public class EpsilonBot {
 	@Getter protected ChatCommandHandler chatCommandHandler = new ChatCommandHandler(this, commandList, Config.getConfig().commandPrefix, Config.getConfig().getAlternatePrefixes());
 	@Getter protected BuildHandler buildHandler = new BuildHandler(this);
 	@Getter protected PlayerListTracker playerListTracker = new PlayerListTracker();
+	@Getter protected PersonalityModule personalityModule = new PersonalityModule(this);
 
 	// OmegaTrack start - Necessary hooks to be able to get the bot instance anytime
 	public OmegaTrack omegaTrack;
 	// OmegaTrack stop
-	
+
 	public EpsilonBot() {
 		this.host = Config.getConfig().getHost();
 		this.port = Config.getConfig().getPort();
@@ -292,6 +290,16 @@ public class EpsilonBot {
 			sendChat(chat);
 		});
 	}
+
+	public void sendChat(String chat, String format) {
+		chatQueue.sendChat(chat, format);
+	}
+
+	public void sendChatAsync(String chat, String format) {
+		executor.submit(() -> {
+			sendChat(chat, format);
+		});
+	}
 	
 	public void sendCommand(String command) {
 		chatQueue.sendCommand(command);
@@ -357,6 +365,8 @@ public class EpsilonBot {
 		commandList.add(new ShowQueueCommand(this));
 		commandList.add(new CancelMapartCommand(this));
 		commandList.add(new ListCommand(this));
+		commandList.add(new PersonalityCommand(this));
+		commandList.add(new InteractCommand(this));
 
 		commandList.add(new AddStaffCommand(this));
 		commandList.add(new RemoveStaffCommand(this));
