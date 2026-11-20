@@ -1,6 +1,5 @@
 package com.github.hhhzzzsss.epsilonbot;
 
-import com.github.hhhzzzsss.epsilonbot.block.World;
 import com.github.hhhzzzsss.epsilonbot.command.CommandList;
 import com.github.hhhzzzsss.epsilonbot.command.commands.*;
 import com.github.hhhzzzsss.epsilonbot.listeners.DisconnectListener;
@@ -9,23 +8,24 @@ import com.github.hhhzzzsss.epsilonbot.listeners.TickListener;
 import com.github.hhhzzzsss.epsilonbot.modules.*;
 import com.github.hhhzzzsss.epsilonbot.util.Auth;
 import com.github.hhhzzzsss.epsilonbot.util.ChatUtils;
-import com.github.steveice10.mc.protocol.MinecraftProtocol;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundChatPacket;
-import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundGameProfilePacket;
-import com.github.steveice10.packetlib.ProxyInfo;
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
-import com.github.steveice10.packetlib.event.session.SessionAdapter;
-import com.github.steveice10.packetlib.packet.Packet;
-import com.github.steveice10.packetlib.tcp.TcpClientSession;
-import io.netty.util.concurrent.FastThreadLocal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import me.videogamesm12.omegatrack.OmegaTrack;
 import me.videogamesm12.omegatrack.command.commands.*;
 import me.videogamesm12.omegatrack.exception.StartFailureException;
+import org.geysermc.mcprotocollib.network.ClientSession;
+import org.geysermc.mcprotocollib.network.ProxyInfo;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
+import org.geysermc.mcprotocollib.network.event.session.SessionAdapter;
+import org.geysermc.mcprotocollib.network.factory.ClientNetworkSessionFactory;
+import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.network.session.ClientNetworkSession;
+import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundChatPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.clientbound.ClientboundLoginFinishedPacket;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -40,7 +40,7 @@ public class EpsilonBot {
 	@Getter private final String host;
 	@Getter private final int port;
 	@Getter @Setter private ProxyInfo PROXY_INFO = null;
-	@Getter private Session session = null;
+	@Getter private ClientSession session = null;
 	@Getter private boolean running = true;
 	@Getter private boolean loggedIn = false;
 	@Getter @Setter private boolean autoRelog = true;
@@ -54,13 +54,9 @@ public class EpsilonBot {
 	@Getter protected ChatLogger chatLogger = new ChatLogger(this, true);
 	@Getter protected ChatQueue chatQueue = new ChatQueue(this);
 	@Getter protected StateManager stateManager = new StateManager(this);
-	@Getter protected PositionManager posManager = new PositionManager(this);
-	@Getter protected World world = new World(this);
 	@Getter protected CommandList commandList = new CommandList();
 	@Getter protected ChatCommandHandler chatCommandHandler = new ChatCommandHandler(this, commandList, Config.getConfig().commandPrefix, Config.getConfig().getAlternatePrefixes());
-	@Getter protected BuildHandler buildHandler = new BuildHandler(this);
 	@Getter protected PlayerListTracker playerListTracker = new PlayerListTracker();
-	@Getter protected PersonalityModule personalityModule = new PersonalityModule(this);
 
 	// OmegaTrack start - Necessary hooks to be able to get the bot instance anytime
 	public OmegaTrack omegaTrack;
@@ -91,14 +87,18 @@ public class EpsilonBot {
 	private void connect() {
 		MinecraftProtocol protocol;
 		try {
-			protocol = Auth.login(Config.getConfig().getUsername(), Config.getConfig().getPassword(), Config.getConfig().getAuthType());
+			protocol = Auth.login(Config.getConfig().getUsername());
 			System.out.println("Successfully authenticated user.");
 		} catch (Throwable e) {
 			chatLogger.log("Error: failed to authenticate user - " + e.getMessage() + ". Restarting...");
 			Main.restartBot();
 			return;
 		}
-		session = new TcpClientSession(host, port, protocol, PROXY_INFO);
+		session = ClientNetworkSessionFactory.factory()
+				.setAddress(host, port)
+				.setProtocol(protocol)
+				.setProxy(PROXY_INFO)
+				.create();
 		session.addListener(new SessionAdapter() {
 			@Override
             public synchronized void packetReceived(Session session, Packet packet) {
@@ -107,9 +107,9 @@ public class EpsilonBot {
 
 			@Override
 		    public void disconnected(DisconnectedEvent event) {
-				FastThreadLocal.removeAll();
+				//FastThreadLocal.removeAll();
 				executor.submit(() -> {
-					FastThreadLocal.removeAll();
+					//FastThreadLocal.removeAll();
 					processDisconnect(event);
 				});
 		    }
@@ -198,9 +198,8 @@ public class EpsilonBot {
 	
 	public List<PacketFuture> packetFutures = new LinkedList<>();
 	private void processPacket(Packet packet) {
-		if (packet instanceof ClientboundGameProfilePacket) {
-			ClientboundGameProfilePacket t_packet = (ClientboundGameProfilePacket) packet;
-			uuid = t_packet.getProfile().getId();
+		if (packet instanceof ClientboundLoginFinishedPacket login) {
+			uuid = login.getProfile().getId();
 		} else if (packet instanceof ClientboundLoginPacket) {
 			loggedIn = true;
 		}
@@ -307,7 +306,7 @@ public class EpsilonBot {
 	
 	public void sendChatInstantly(String chat) {
 		// TODO: Support chat signatures
-		sendPacket(new ServerboundChatPacket(chat, System.currentTimeMillis(), 0, null, 0, new BitSet()));
+		sendPacket(new ServerboundChatPacket(chat, System.currentTimeMillis(), 0, null, 0, new BitSet(), 0));
 	}
 	
 	public void stop() {
@@ -360,13 +359,7 @@ public class EpsilonBot {
 
 		commandList.add(new TestCommand(this));
 
-		commandList.add(new BuildStatusCommand(this));
-		commandList.add(new MapartCommand(this));
-		commandList.add(new ShowQueueCommand(this));
-		commandList.add(new CancelMapartCommand(this));
 		commandList.add(new ListCommand(this));
-		commandList.add(new PersonalityCommand(this));
-		commandList.add(new InteractCommand(this));
 
 		commandList.add(new AddStaffCommand(this));
 		commandList.add(new RemoveStaffCommand(this));
@@ -386,7 +379,6 @@ public class EpsilonBot {
 			commandList.add(new WTCommand(this.omegaTrack));
 			commandList.add(new SetOffsetCommand(this.omegaTrack));
 			commandList.add(new OmegaTrackCommand()); // This one doesn't depend on OmegaTrack, so it is just a regular Epsilon ChatCommand
-			commandList.add(new STFUCommand(this.omegaTrack));
 			commandList.add(new AmIIndexedCommand(this.omegaTrack));
 		}
 		// OmegaTrack stop

@@ -13,22 +13,38 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>16</maven.compiler.source>
-    <maven.compiler.target>16</maven.compiler.target>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
   </properties>
 
   <repositories>
     <repository>
       <id>opencollab</id>
-      <url>https://repo.opencollab.dev/maven-releases/</url>
+      <url>https://repo.opencollab.dev/main/</url>
     </repository>
   </repositories>
 
   <dependencies>
     <dependency>
-      <groupId>com.github.steveice10</groupId>
-      <artifactId>mcprotocollib</artifactId>
-      <version>1.20.4-1</version>
+      <groupId>org.geysermc.mcprotocollib</groupId>
+      <artifactId>protocol</artifactId>
+      <version>26.3-3</version>
+    </dependency>
+    <!-- Just use Adventure-NBT? Why are they using this? -->
+    <dependency>
+      <groupId>org.cloudburstmc</groupId>
+      <artifactId>nbt</artifactId>
+      <version>3.1.0.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-key</artifactId>
+      <version>5.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>net.kyori</groupId>
+      <artifactId>adventure-api</artifactId>
+      <version>5.2.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
@@ -38,23 +54,23 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.10.0</version>
+      <version>1.15.0</version>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>1.18.22</version>
+      <version>1.18.48</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.13.0</version>
+      <version>2.22.0</version>
     </dependency>
     <dependency>
       <groupId>org.yaml</groupId>
       <artifactId>snakeyaml</artifactId>
-      <version>1.30</version>
+      <version>2.7</version>
     </dependency>
     <dependency>
       <groupId>org.imgscalr</groupId>
@@ -64,23 +80,36 @@
     <dependency>
       <groupId>com.microsoft.azure</groupId>
       <artifactId>msal4j</artifactId>
-      <version>1.13.9</version>
+      <version>1.26.1</version>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.5.5</version>
+      <version>42.7.14</version>
     </dependency>
     <dependency>
       <groupId>net.raphimc</groupId>
       <artifactId>MinecraftAuth</artifactId>
-      <version>4.0.0</version>
+      <version>5.0.2</version>
     </dependency>
   </dependencies>
 
   <build>
     <finalName>EpsilonBot-slim</finalName>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>1.18.48</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>

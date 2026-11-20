@@ -71,8 +71,8 @@ public class ChatUtils {
 			else {
 				String idxStr = matcher.group(1);
 				int idx = idxStr == null ? i++ : Integer.parseInt(idxStr);
-				if (idx < message.args().size()) {
-					matcher.appendReplacement(sb, Matcher.quoteReplacement( getFullText(message.args().get(idx)) ));
+				if (idx < message.arguments().size()) {
+					matcher.appendReplacement(sb, Matcher.quoteReplacement( getFullText(message.arguments().get(idx).asComponent()) ));
 				}
 				else {
 					matcher.appendReplacement(sb, "");

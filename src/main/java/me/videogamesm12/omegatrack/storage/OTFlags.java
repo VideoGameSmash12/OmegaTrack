@@ -74,7 +74,7 @@ public class OTFlags
     @Data
     public static class UserFlags
     {
-        private boolean optedOut = true;
+        private boolean optedOut = false;
         private boolean dontMsg = false;
         private boolean supposedToShutUp = false;
     }

@@ -1,7 +1,7 @@
 package me.videogamesm12.omegatrack.tasks.tracker;
 
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundEntityTagQuery;
 import me.videogamesm12.omegatrack.OmegaTrack;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundEntityTagQuery;
 
 import java.util.TimerTask;
 

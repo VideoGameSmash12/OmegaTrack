@@ -1,23 +1,6 @@
 package me.videogamesm12.omegatrack;
 
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
-import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
-import com.github.steveice10.mc.protocol.data.game.entity.EntityEvent;
-import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerInfoRemovePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerInfoUpdatePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundEntityEventPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundTagQueryPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.level.ServerboundEntityTagQuery;
-import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
-import com.github.steveice10.opennbt.tag.builtin.IntTag;
-import com.github.steveice10.opennbt.tag.builtin.Tag;
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.event.session.SessionAdapter;
-import com.github.steveice10.packetlib.packet.Packet;
 import lombok.Getter;
 import lombok.Setter;
 import me.videogamesm12.omegatrack.storage.OTConfig;
@@ -27,6 +10,20 @@ import me.videogamesm12.omegatrack.tasks.wiretap.TraditionalBackwardsTimerTask;
 import me.videogamesm12.omegatrack.tasks.wiretap.TraditionalTimerTask;
 import me.videogamesm12.omegatrack.tasks.wiretap.PacketSenderTask;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.event.session.SessionAdapter;
+import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.protocol.data.game.PlayerListEntryAction;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.EntityEvent;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerInfoRemovePacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerInfoUpdatePacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundAddEntityPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundEntityEventPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundTagQueryPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundEntityTagQuery;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -74,6 +71,7 @@ public class Wiretap extends SessionAdapter
         // This gets sent regardless of Delta communication because we use it to send special messages.
         this.timer.scheduleAtFixedRate(this.regularTimerTask, 0, 100);
 
+        /*
         // Sets up entity brute-forcing if we are not using Delta communication
         if (!OTConfig.INSTANCE.getGeneral().isUsingDeltaCommunication())
         {
@@ -83,6 +81,7 @@ public class Wiretap extends SessionAdapter
             // Sets up the bruteforcer.
             resetBruteforcer(0);
         }
+        */
     }
 
     public Wiretap(final OmegaTrack omegaTrack)
@@ -124,23 +123,26 @@ public class Wiretap extends SessionAdapter
     public void packetReceived(Session session, Packet packet)
     {
         // Delta communication specific
+        /*
         if (OTConfig.INSTANCE.getGeneral().isUsingDeltaCommunication())
         {
             // Process the special response containing entity IDs of every online player.
-            if (packet instanceof ClientboundTagQueryPacket tagQuery && tagQuery.getNbt().contains("DeltaEntityIDs"))
+            if (packet instanceof ClientboundTagQueryPacket tagQuery
+                    && tagQuery.getNbt() != null
+                    && tagQuery.getNbt().containsKey("DeltaEntityIDs"))
             {
-                final Map<String, Tag> response = tagQuery.getNbt().getValue();
-                CompoundTag uuidSet = (CompoundTag) response.get("DeltaEntityIDs");
-                uuidSet.getValue().forEach((uuid, tag) ->
+                final NbtMap response = tagQuery.getNbt();
+                final NbtMap uuidSet = response.getCompound("DeltaEntityIDs");
+                uuidSet.forEach((uuid, tag) ->
                 {
-                    if (tag instanceof IntTag id && !isLinked(UUID.fromString(uuid)))
+                    if (tag instanceof Integer id && !isLinked(UUID.fromString(uuid)))
                     {
                         // Link the entity ID with the UUID
-                        link(id.getValue(), UUID.fromString(uuid));
+                        link(id, UUID.fromString(uuid));
                     }
                     else
                     {
-                        System.out.println(tag.getValue());
+                        System.out.println(tag);
                     }
                 });
             }
@@ -173,17 +175,9 @@ public class Wiretap extends SessionAdapter
                         final UUID uuid = entry.getProfile().getId();
                         final OTFlags.UserFlags flags = this.omegaTrack.flags.getFlags(uuid);
 
-                        // If they are opted-in...
+                        // If they aren't opted-out...
                         if (!flags.isOptedOut())
                         {
-                            // Remind them that this is the case
-                            if (!flags.isSupposedToShutUp())
-                            {
-                                this.epsilonBot.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to "
-                                        + "being tracked by OmegaTrack. If you wish for this to stop, use the command !optout. "
-                                        + "To disable messages like these, use the !stfu command.");
-                            }
-
                             outQueue.add(new ServerboundEntityTagQuery(20101111, 20140324));
                         }
                     });
@@ -192,6 +186,7 @@ public class Wiretap extends SessionAdapter
 
             return;
         }
+        */
 
         // Self-registration as a player
         if (packet instanceof ClientboundLoginPacket login)
@@ -210,7 +205,9 @@ public class Wiretap extends SessionAdapter
             }
         }
         // Response to queries we made previously
-        else if (packet instanceof ClientboundTagQueryPacket tagQuery && tagQuery.getNbt().contains("EnderItems"))
+        else if (packet instanceof ClientboundTagQueryPacket tagQuery
+                && tagQuery.getNbt() != null
+                && tagQuery.getNbt().containsKey("EnderItems"))
         {
             // We just link UUIDs with entity IDs here.
             int id = tagQuery.getTransactionId();
@@ -219,7 +216,7 @@ public class Wiretap extends SessionAdapter
             if (isLinked(id))
                 return;
 
-            final Object uuidObject = tagQuery.getNbt().get("UUID").getValue();
+            final Object uuidObject = tagQuery.getNbt().get("UUID");
             UUID uuid;
             if (uuidObject instanceof String string)
             {
@@ -312,18 +309,10 @@ public class Wiretap extends SessionAdapter
                     final UUID uuid = entry.getProfile().getId();
                     final OTFlags.UserFlags flags = this.omegaTrack.flags.getFlags(uuid);
 
-                    // If they are opted-in...
+                    // If they aren't opted-out...
                     if (!flags.isOptedOut())
                     {
-                        // Remind them that this is the case
-                        if (!flags.isSupposedToShutUp())
-                        {
-                            this.epsilonBot.sendCommand("/etell " + uuid + " Just a reminder: you have opted in to "
-                                    + "being tracked by OmegaTrack. If you wish for this to stop, use the command !optout. "
-                                    + "To disable messages like these, use the !stfu command.");
-                        }
-
-                        // Attempt to find the latest entity ID by spawning in a Pig
+                        // Attempt to find the latest entity ID by spawning in a Squid
                         this.epsilonBot.sendCommand("/spawnmob squid 1");
                     }
                 });

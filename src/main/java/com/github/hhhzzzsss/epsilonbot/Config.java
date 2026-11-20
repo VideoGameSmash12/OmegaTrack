@@ -3,6 +3,7 @@ package com.github.hhhzzzsss.epsilonbot;
 import lombok.Data;
 import lombok.Getter;
 import org.apache.commons.io.IOUtils;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -17,25 +18,17 @@ public class Config {
     static final File file = new File("config.yml");
     @Getter private static Config config;
 
-    String host = "play.totalfreedom.me";
+    String host = "play.tfreedom.org";
     int port = 25565;
     String username;
     String password;
-    String authType = "microsoft";
-    int buildSyncX;
-    int buildSyncZ;
-    int mapartX;
-    int mapartZ;
-    int maxTiles = 9;
+    String authType = "offline";
     String commandPrefix = "`";
     ArrayList<String> alternatePrefixes;
-    String warpName = "epsilon_mapart";
     String staffKey = "";
     String trustedKey = "";
     ArrayList<String> trusted;
     boolean nonPMCommandsEnabled;
-    String personalityServerHost = "http://localhost:8854";
-    String personalityServerAuthToken = "put_token_here";
 
     static {
         if (!file.exists()) {
@@ -48,7 +41,7 @@ public class Config {
             }
             IOUtils.closeQuietly(is);
         }
-        Constructor constructor = new Constructor(Config.class);
+        Constructor constructor = new Constructor(Config.class, new LoaderOptions());
         TypeDescription typeDescription = new TypeDescription(Config.class);
         typeDescription.addPropertyParameters("trusted", String.class);
         typeDescription.addPropertyParameters("alternatePrefixes", String.class);

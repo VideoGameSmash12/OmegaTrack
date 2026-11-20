@@ -5,14 +5,14 @@ import com.github.hhhzzzsss.epsilonbot.Logger;
 import com.github.hhhzzzsss.epsilonbot.listeners.DisconnectListener;
 import com.github.hhhzzzsss.epsilonbot.listeners.PacketListener;
 import com.github.hhhzzzsss.epsilonbot.util.ChatUtils;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundDisguisedChatPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerChatPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundSystemChatPacket;
-import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
-import com.github.steveice10.packetlib.packet.Packet;
 import lombok.Getter;
 import lombok.Setter;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
+import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundDisguisedChatPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerChatPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundSystemChatPacket;
 
 public class ChatLogger implements PacketListener, DisconnectListener {
 	private final EpsilonBot bot;

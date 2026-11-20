@@ -1,14 +1,14 @@
 package me.videogamesm12.omegatrack;
 
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundTagQueryPacket;
-import com.github.steveice10.opennbt.tag.builtin.DoubleTag;
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.event.session.SessionAdapter;
-import com.github.steveice10.packetlib.packet.Packet;
+import com.github.hhhzzzsss.epsilonbot.Logger;
 import me.videogamesm12.omegatrack.data.PositionDataset;
 import me.videogamesm12.omegatrack.tasks.tracker.TrackerTask;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.event.session.SessionAdapter;
+import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundTagQueryPacket;
 
 import java.util.*;
 
@@ -41,10 +41,11 @@ public class Tracker extends SessionAdapter
     public void packetReceived(Session session, Packet packet)
     {
         if (packet instanceof ClientboundTagQueryPacket queryPacket
-                && queryPacket.getNbt().contains("EnderItems"))
+                && queryPacket.getNbt() != null
+                && queryPacket.getNbt().containsKey("EnderItems"))
         {
             // Gets the user's UUID
-            final Object uuidObject = queryPacket.getNbt().get("UUID").getValue();
+            final Object uuidObject = queryPacket.getNbt().get("UUID");
             final UUID uuid;
 
             // For compatibility with Delta
@@ -62,21 +63,24 @@ public class Tracker extends SessionAdapter
             if (this.omegaTrack.flags.getFlags(uuid).isOptedOut())
                 return;
 
-            final String world = (String) queryPacket.getNbt().get("Dimension").getValue();
-            final Object posRaw = queryPacket.getNbt().get("Pos").getValue();
+            final String world = queryPacket.getNbt().getString("Dimension");
+            final Object posRaw = queryPacket.getNbt().get("Pos");
 
             // Prevents non-list position coordinates from being indexed (primarily because we don't know what it is)
             if (!(posRaw instanceof ArrayList))
+            {
+                Logger.log("[Tracker] Unknown type: " + posRaw.getClass().getName());
                 return;
+            }
 
             // Extracts the position from the NBT
-            final List<DoubleTag> doubles = (List<DoubleTag>) queryPacket.getNbt().get("Pos").getValue();
+            final List<Double> doubles = (List<Double>) posRaw;
 
             System.out.println("Sending " + uuid + " to database");
             try
             {
                 // Queues the dataset to be sent to the database
-                this.omegaTrack.storage.queue(new PositionDataset(uuid, world, doubles.get(0).getValue(), doubles.get(2).getValue()));
+                this.omegaTrack.storage.queue(new PositionDataset(uuid, world, doubles.get(0), doubles.get(2)));
             }
             catch (Throwable ex)
             {

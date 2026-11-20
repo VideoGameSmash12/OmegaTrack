@@ -1,6 +1,6 @@
 package com.github.hhhzzzsss.epsilonbot.listeners;
 
-import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
 
 public interface DisconnectListener {
 	public void onDisconnected(DisconnectedEvent packet);

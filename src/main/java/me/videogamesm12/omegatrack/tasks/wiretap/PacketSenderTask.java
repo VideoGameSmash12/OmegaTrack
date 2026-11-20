@@ -1,7 +1,7 @@
 package me.videogamesm12.omegatrack.tasks.wiretap;
 
-import com.github.steveice10.packetlib.packet.Packet;
 import me.videogamesm12.omegatrack.Wiretap;
+import org.geysermc.mcprotocollib.network.packet.Packet;
 
 import java.util.Queue;
 

@@ -6,12 +6,12 @@ import com.github.hhhzzzsss.epsilonbot.command.*;
 import com.github.hhhzzzsss.epsilonbot.listeners.PacketListener;
 import com.github.hhhzzzsss.epsilonbot.util.ChatUtils;
 import com.github.hhhzzzsss.epsilonbot.util.HashUtils;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundDisguisedChatPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundPlayerChatPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundSystemChatPacket;
-import com.github.steveice10.packetlib.packet.Packet;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
+import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundDisguisedChatPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerChatPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundSystemChatPacket;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -82,8 +82,8 @@ public class ChatCommandHandler implements PacketListener {
 	}
 
 	public void onPacket(Packet packet) {
-		if (packet instanceof ClientboundPlayerChatPacket t_packet) {
-			UUID uuid = t_packet.getSender();
+		if (packet instanceof ClientboundPlayerChatPacket chat) {
+			UUID uuid = chat.getSender();
 			if (uuid.equals(bot.getUuid())) {
 				return;
 			}
@@ -92,9 +92,9 @@ public class ChatCommandHandler implements PacketListener {
 				return;
 			}
 
-			String strName = ChatUtils.getFullText(t_packet.getName()).replaceAll("§[0-9a-fklmnor]", "");
-			String strMessage = t_packet.getContent();
-			String strUnsignedMessage = ChatUtils.getFullText(t_packet.getUnsignedContent());
+			String strName = ChatUtils.getFullText(chat.getName()).replaceAll("§[0-9a-fklmnor]", "");
+			String strMessage = chat.getContent();
+			String strUnsignedMessage = ChatUtils.getFullText(chat.getUnsignedContent());
 			
 			Matcher m;
 			String senderPrefix = null;
@@ -116,10 +116,10 @@ public class ChatCommandHandler implements PacketListener {
 			} catch (CommandException e) {
 				bot.sendChat("Error: " + e.getMessage());
 			}
-		} else if (packet instanceof ClientboundDisguisedChatPacket t_packet) {
-			handleFullChat(t_packet.getMessage());
-		} else if (packet instanceof ClientboundSystemChatPacket t_packet) {
-			handleFullChat(t_packet.getContent());
+		} else if (packet instanceof ClientboundDisguisedChatPacket disguised) {
+			handleFullChat(disguised.getMessage());
+		} else if (packet instanceof ClientboundSystemChatPacket system) {
+			handleFullChat(system.getContent());
 		}
 	}
 
