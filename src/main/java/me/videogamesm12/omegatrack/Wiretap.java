@@ -71,6 +71,16 @@ public class Wiretap extends SessionAdapter
         // This gets sent regardless of Delta communication because we use it to send special messages.
         this.timer.scheduleAtFixedRate(this.regularTimerTask, 0, 100);
 
+        // Ensure we are at the current spawn every 5 or so minutes.
+        this.timer.scheduleAtFixedRate(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                epsilonBot.sendCommand("/spawn");
+            }
+        }, 0, 5000 * 60);
+
         /*
         // Sets up entity brute-forcing if we are not using Delta communication
         if (!OTConfig.INSTANCE.getGeneral().isUsingDeltaCommunication())
@@ -299,6 +309,7 @@ public class Wiretap extends SessionAdapter
             }
         }
         // Perform certain actions when a player joins or leaves the server
+        /*
         else if (packet instanceof ClientboundPlayerInfoUpdatePacket playerInfo)
         {
             // Begin tracking the players and notify them of such if they opted in
@@ -318,6 +329,7 @@ public class Wiretap extends SessionAdapter
                 });
             }
         }
+        */
         // Perform certain actions when a player leaves the server
         else if (packet instanceof ClientboundPlayerInfoRemovePacket remove)
         {

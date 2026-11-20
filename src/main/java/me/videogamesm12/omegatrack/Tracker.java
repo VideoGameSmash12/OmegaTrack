@@ -5,6 +5,8 @@ import com.github.hhhzzzsss.epsilonbot.Logger;
 import me.videogamesm12.omegatrack.data.PositionDataset;
 import me.videogamesm12.omegatrack.tasks.tracker.TrackerTask;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
+import org.cloudburstmc.nbt.NbtList;
+import org.cloudburstmc.nbt.NbtType;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.SessionAdapter;
 import org.geysermc.mcprotocollib.network.packet.Packet;
@@ -64,23 +66,22 @@ public class Tracker extends SessionAdapter
                 return;
 
             final String world = queryPacket.getNbt().getString("Dimension");
-            final Object posRaw = queryPacket.getNbt().get("Pos");
 
-            // Prevents non-list position coordinates from being indexed (primarily because we don't know what it is)
-            if (!(posRaw instanceof ArrayList))
+            // Extracts the position from the NBT
+            final List<Double> pos = queryPacket.getNbt().getList("Pos", NbtType.DOUBLE);
+
+            // Refuse to record empty data
+            if (pos.isEmpty())
             {
-                Logger.log("[Tracker] Unknown type: " + posRaw.getClass().getName());
                 return;
             }
 
-            // Extracts the position from the NBT
-            final List<Double> doubles = (List<Double>) posRaw;
-
+            // Record the data
             System.out.println("Sending " + uuid + " to database");
             try
             {
                 // Queues the dataset to be sent to the database
-                this.omegaTrack.storage.queue(new PositionDataset(uuid, world, doubles.get(0), doubles.get(2)));
+                this.omegaTrack.storage.queue(new PositionDataset(uuid, world, pos.get(0), pos.get(2)));
             }
             catch (Throwable ex)
             {
