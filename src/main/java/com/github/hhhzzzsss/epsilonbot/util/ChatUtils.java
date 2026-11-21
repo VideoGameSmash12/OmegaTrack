@@ -16,6 +16,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ChatUtils {
+	public static final Pattern MESSAGE_PATTERN = Pattern.compile("^\\[(~.*|[A-z0-9]{1,16}) -> me] (.*)$");
+
 	public static final Pattern ARG_PATTERN = Pattern.compile("%(?:(\\d+)\\$)?(s|%)");
 	public static final HashMap<String, String> LANGUAGE_MAP = new HashMap<>(); 
 	static {
@@ -25,6 +27,24 @@ public class ChatUtils {
 		for (Map.Entry<String, JsonElement> entry : languageJson.entrySet()) {
 			LANGUAGE_MAP.put(entry.getKey(), languageJson.get(entry.getKey()).getAsString());
 		}
+	}
+
+	public static boolean isEssentialsMessage(final String content)
+	{
+		return content.matches("^\\[(~.*|[A-z0-9]{1,16}) -> me] (.*)$");
+	}
+
+	public static String[] readEssentialsMessage(final String content)
+	{
+		final Matcher matcher = MESSAGE_PATTERN.matcher(content);
+
+		if (!matcher.find())
+		{
+			throw new IllegalStateException("Huh? isEssentialsMessage returned true but readEssentialsMessage can't find anything?");
+		}
+
+		// Display Name / Username, Message
+		return new String[] {matcher.group(1), matcher.group(2)};
 	}
 	
 	public static String getFullText(Component message) {

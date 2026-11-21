@@ -22,7 +22,7 @@ public class OptInCommand extends AbstractOmegaTrackCommand
         }
 
         this.omegaTrack.flags.getFlags(sender.getUuid()).setOptedOut(false);
-        sender.getBot().sendResponse("You will now be tracked by OmegaTrack. To start being tracked immediately, teleport to me or reconnect.", sender.getMsgSender());
+        sender.getBot().sendResponse("You will now be tracked by OmegaTrack. To start being tracked immediately, teleport to me or reconnect.", sender.getUuid().toString());
     }
 
     @Override

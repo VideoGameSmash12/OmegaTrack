@@ -6,19 +6,25 @@ import com.github.hhhzzzsss.epsilonbot.command.*;
 import com.github.hhhzzzsss.epsilonbot.listeners.PacketListener;
 import com.github.hhhzzzsss.epsilonbot.util.ChatUtils;
 import com.github.hhhzzzsss.epsilonbot.util.HashUtils;
+import com.mojang.brigadier.CommandDispatcher;
 import lombok.Getter;
+import lombok.NonNull;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import org.apache.commons.lang3.ArrayUtils;
 import org.geysermc.mcprotocollib.network.packet.Packet;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundDisguisedChatPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerChatPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundSystemChatPacket;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ChatCommandHandler implements PacketListener {
+public class ChatCommandHandler implements PacketListener
+{
 	private final EpsilonBot bot;
 	private final CommandList commandList;
 	@Getter private String prefix;
@@ -36,146 +42,113 @@ public class ChatCommandHandler implements PacketListener {
 	}
 
 	private void handleFullChat(Component message) {
+		// Read message
 		String strMessage = ChatUtils.getFullText(message).replaceAll("§[0-9a-fklmnor]", "");
 
-		Matcher m;
-		String command;
-		String args;
-		String msgSender = null; // obsolete, specifically for /msg on old tf
-		String senderPrefix = null;
-		String username = null;
-		if ((m = msgCommandPattern.matcher(strMessage)).matches()) { // obsolete
-			if (!m.group(2).equals("Freedom")) {
-				return;
-			}
-			msgSender = m.group(1);
-			username = msgSender;
-			command = m.group(3);
-			args = m.group(4).trim();
-		} else if ((m = chatCommandPattern.matcher(strMessage)).matches()) {
-			System.out.println("Detected chat command: " + strMessage);
-			senderPrefix = m.group(1);
-			username = m.group(2);
-			command = m.group(3);
-			args = m.group(4).trim();
-			if (username.equalsIgnoreCase(bot.getUsername())) {
-				return;
-			}
-		} else if ((m = discordCommandPattern.matcher(strMessage)).matches()) {
-			senderPrefix = m.group(1);
-			command = m.group(2);
-			args = m.group(3).trim();
-		} else {
-			return;
-		}
+		if (message instanceof TextComponent && ChatUtils.isEssentialsMessage(strMessage))
+		{
+			final String[] nameAndMessage = ChatUtils.readEssentialsMessage(strMessage);
+			final UUID uuid = nameAndMessage[0].startsWith("~") ?
+					bot.getPlayerListTracker().getPlayerList().entrySet()
+							.stream()
+							.filter(entry ->
+                                    nameAndMessage[0].equals(ChatUtils.getFullText(entry.getValue().getDisplayName())
+                                            .replaceAll("§[0-9a-fklmnor]", "")))
+							.findAny()
+							.map(Map.Entry::getKey)
+							.orElse(null):
+					bot.getPlayerListTracker().getUuidMap().get(nameAndMessage[0]);
 
-		try {
-			runCommand(new UUID(0, 0), username, msgSender, senderPrefix, command, args);
-		}
-		catch (CommandException e) {
-			if (msgSender == null) {
-				bot.sendChat("Error: " + e.getMessage());
-			} else {
-				bot.sendMsg("Error: " + e.getMessage(), msgSender);
+			if (uuid == null)
+			{
+				System.out.println("Unable to find player list entry for " + nameAndMessage[0]);
+				return;
+			}
+
+			// Don't acknowledge your own messages lol
+			if (uuid.equals(bot.getUuid()))
+			{
+				return;
+			}
+
+			// Reject blacklisted users
+			if (ModerationManager.isBlacklisted(uuid))
+			{
+				return;
+			}
+
+			final String username = bot.getPlayerListTracker().getPlayerList().get(uuid).getName();
+			final String rawMessage = nameAndMessage[1];
+
+			// Nice try.
+			if (rawMessage.contains("<") || rawMessage.contains(">"))
+			{
+				return;
+			}
+
+			final String[] command = rawMessage.split(" ");
+
+			if (command.length == 0)
+			{
+				return;
+			}
+
+			try
+			{
+				runCommand(uuid, username, command[0], ArrayUtils.subarray(command, 1, command.length));
+			}
+			catch (CommandException ex)
+			{
+				bot.sendMsg("Error: " + ex.getMessage(), uuid.toString());
 			}
 		}
 	}
 
-	public void onPacket(Packet packet) {
-		if (packet instanceof ClientboundPlayerChatPacket chat) {
-			UUID uuid = chat.getSender();
-			if (uuid.equals(bot.getUuid())) {
-				return;
-			}
-
-			if (ModerationManager.isBlacklisted(uuid)) {
-				return;
-			}
-
-			String strName = ChatUtils.getFullText(chat.getName()).replaceAll("§[0-9a-fklmnor]", "");
-			String strMessage = chat.getContent();
-			String strUnsignedMessage = ChatUtils.getFullText(chat.getUnsignedContent());
-			
-			Matcher m;
-			String senderPrefix = null;
-			String command;
-			String args;
-			if ((m = commandPattern.matcher(strMessage)).matches()) {
-				int idxOfCommand = strUnsignedMessage.indexOf(strMessage);
-				if (idxOfCommand > 0) {
-					senderPrefix = strUnsignedMessage.substring(0, idxOfCommand);
-				}
-				command = m.group(1);
-				args = m.group(2).trim();
-			} else {
-				return;
-			}
-
-			try {
-				runCommand(uuid, strName, null, senderPrefix, command, args);
-			} catch (CommandException e) {
-				bot.sendChat("Error: " + e.getMessage());
-			}
-		} else if (packet instanceof ClientboundDisguisedChatPacket disguised) {
+	public void onPacket(Packet packet)
+	{
+		if (packet instanceof ClientboundDisguisedChatPacket disguised)
+		{
 			handleFullChat(disguised.getMessage());
-		} else if (packet instanceof ClientboundSystemChatPacket system) {
+		}
+		else if (packet instanceof ClientboundSystemChatPacket system)
+		{
 			handleFullChat(system.getContent());
 		}
 	}
 
-	public void runCommand(UUID uuid, String username, String msgSender, String senderPrefix, String commandPrefixed, String args) throws CommandException {
-		String commandName = prefixPattern.matcher(commandPrefixed).replaceAll("");
-		if (commandName.length() == 0) {
+	public void runCommand(@NonNull UUID uuid,
+						   @NonNull String username,
+						   @NonNull String command,
+						   @NonNull String[] arguments) throws CommandException
+	{
+		if (command.isEmpty())
+		{
 			return;
 		}
-		Command command = commandList.get(commandName.toLowerCase());
-		if (command == null) {
-			throw new CommandException("Unknown command - " + commandName);
+
+		// Find our command
+		final Command entry = commandList.get(command.toLowerCase());
+		if (entry == null)
+		{
+			throw new CommandException("Unknown command - " + command);
 		}
-		if (!(command instanceof ChatCommand)) {
+
+		if (!(entry instanceof ChatCommand cmd))
+		{
 			throw new CommandException("This command cannot be run from Minecraft chat");
 		}
 
-		int permission = 0;
-		if (msgSender != null) {
-			for (PlayerListTracker.PlayerData playerData : bot.getPlayerListTracker().getPlayerList().values()) {
-				if (playerData.getName().equals(msgSender)) {
-					if (Config.getConfig().getTrusted().contains(playerData.getUUID().toString())) {
-						permission = 2;
-					} else if (ModerationManager.isStaff(playerData.getUUID())) {
-						permission = 1;
-					}
-					break;
-				}
-			}
-		} else {
-			if (Config.getConfig().getTrusted().contains(uuid.toString())) {
-				permission = 2;
-			} else if (ModerationManager.isStaff(uuid)) {
-				permission = 1;
-			}
-		}
+		// Trusted users have level 2
+		// Moderators have level 1
+		// Regular users have level 0
+		int permission = Config.getConfig().getTrusted().contains(uuid.toString()) ? 2 : ModerationManager.isStaff(uuid) ? 1 : 0;
 
-		String trustedKey = Config.getConfig().getTrustedKey();
-		String staffKey = Config.getConfig().getStaffKey();
-
-		int splitIdx = args.lastIndexOf(" ");
-		String hash = splitIdx != -1 ? args.substring(splitIdx + 1) : args;
-		String argsNoHash = splitIdx != -1 ? args.substring(0, splitIdx) : "";
-		String commandNoHash = argsNoHash.isEmpty() ? commandPrefixed : commandPrefixed + " " + argsNoHash;
-		if (!trustedKey.isEmpty() && HashUtils.isValidHash(commandNoHash, username, trustedKey, hash)) {
-			args = argsNoHash;
-			permission = 2;
-		} else if (!staffKey.isEmpty() && HashUtils.isValidHash(commandNoHash, username, staffKey, hash)) {
-			args = argsNoHash;
-			permission = 1;
-		}
-
-		if (command.getPermission() > permission) {
+		if (cmd.getPermission() > permission)
+		{
 			throw new CommandException("You don't have permission to run this command");
 		}
 
-		((ChatCommand) command).executeChat(new ChatSender(bot, uuid, msgSender, senderPrefix, permission), args);
+		cmd.executeChat(new ChatSender(bot, uuid, username, permission), String.join(" ", arguments));
 	}
 
 	/**
@@ -184,8 +157,6 @@ public class ChatCommandHandler implements PacketListener {
 	 * @param prefix The command prefix
 	 */
 	public void setPrefix(String prefix, ArrayList<String> alternatePrefixes) {
-		this.prefix = prefix;
-		this.alternatePrefixes = alternatePrefixes;
 		ArrayList<String> allPrefixes = new ArrayList<>();
 		allPrefixes.add(prefix);
 		allPrefixes.addAll(alternatePrefixes);

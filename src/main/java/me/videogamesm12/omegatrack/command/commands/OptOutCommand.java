@@ -37,7 +37,7 @@ public class OptOutCommand extends AbstractOmegaTrackCommand
         }
 
         this.omegaTrack.wiretap.unlink(sender.getUuid());
-        sender.getBot().sendResponse("You will no longer be tracked by OmegaTrack.", sender.getMsgSender());
+        sender.getBot().sendResponse("You will no longer be tracked by OmegaTrack.", sender.getUuid().toString());
     }
 
     @Override

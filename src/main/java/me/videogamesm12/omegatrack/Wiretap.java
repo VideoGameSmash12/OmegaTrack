@@ -81,9 +81,11 @@ public class Wiretap extends SessionAdapter
             }
         }, 0, 5000 * 60);
 
-        /*
+
         // Sets up entity brute-forcing if we are not using Delta communication
+        /*
         if (!OTConfig.INSTANCE.getGeneral().isUsingDeltaCommunication())
+        */
         {
             // Slightly throttled compared to the regular `out`, but this is to avoid spamming the server with possibly
             //  thousands of requests per second.
@@ -91,7 +93,6 @@ public class Wiretap extends SessionAdapter
             // Sets up the bruteforcer.
             resetBruteforcer(0);
         }
-        */
     }
 
     public Wiretap(final OmegaTrack omegaTrack)

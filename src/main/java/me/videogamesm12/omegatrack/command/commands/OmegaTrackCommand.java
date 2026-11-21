@@ -11,7 +11,7 @@ public class OmegaTrackCommand extends ChatCommand
     {
         //sender.getBot().sendResponse("OmegaTrack is a fork of EpsilonBot that tracks in-game coordinates for players who opt-in. This data will be used to help archive the server worlds in the future.", sender.getMsgSender());
         //sender.getBot().sendResponse("For more information: https://gist.github.com/VideoGameSmash12/274165f38bde9597b7c5c2de10fa60a9", sender.getMsgSender());
-        sender.getBot().sendResponse("OmegaTrack is a fork of EpsilonBot that tracks in-game coordinates for players. This data will be used to analyze player movements.", sender.getMsgSender());
+        sender.getBot().sendResponse("OmegaTrack is a fork of EpsilonBot that tracks in-game coordinates for players. This data will be used to analyze player movements.", sender.getUuid().toString());
     }
 
     @Override

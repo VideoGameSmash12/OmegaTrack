@@ -8,10 +8,10 @@ import java.util.UUID;
 
 @AllArgsConstructor
 @Getter
-public class ChatSender {
+public class ChatSender
+{
     private final EpsilonBot bot;
     private final UUID uuid;
-    private final String msgSender;
-    private final String senderPrefix;
+    private final String username;
     private final int permission;
 }

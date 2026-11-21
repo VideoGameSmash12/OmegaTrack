@@ -34,7 +34,7 @@ public class SetOffsetCommand extends AbstractOmegaTrackCommand
         }
 
         this.omegaTrack.wiretap.resetBruteforcer(number);
-        sender.getBot().sendResponse("Okay, reset the grabber to start at #" + number + ".", sender.getMsgSender());
+        sender.getBot().sendResponse("Okay, reset the grabber to start at #" + number + ".", sender.getUuid().toString());
     }
 
     @Override

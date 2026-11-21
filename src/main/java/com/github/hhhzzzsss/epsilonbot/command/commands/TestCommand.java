@@ -30,6 +30,6 @@ public class TestCommand extends ChatCommand {
 
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException {
-        bot.sendResponse("Test command received. Your permission level is " + sender.getPermission() + ".", sender.getMsgSender());
+        bot.sendResponse("Test command received. Your permission level is " + sender.getPermission() + ".", sender.getUuid().toString());
     }
 }

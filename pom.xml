@@ -22,6 +22,11 @@
       <id>opencollab</id>
       <url>https://repo.opencollab.dev/main/</url>
     </repository>
+    <repository>
+      <id>minecraft-libraries</id>
+      <name>Minecraft Libraries</name>
+      <url>https://libraries.minecraft.net</url>
+    </repository>
   </repositories>
 
   <dependencies>
@@ -45,6 +50,11 @@
       <groupId>net.kyori</groupId>
       <artifactId>adventure-api</artifactId>
       <version>5.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.mojang</groupId>
+      <artifactId>brigadier</artifactId>
+      <version>1.0.18</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
@@ -73,24 +83,9 @@
       <version>2.7</version>
     </dependency>
     <dependency>
-      <groupId>org.imgscalr</groupId>
-      <artifactId>imgscalr-lib</artifactId>
-      <version>4.2</version>
-    </dependency>
-    <dependency>
-      <groupId>com.microsoft.azure</groupId>
-      <artifactId>msal4j</artifactId>
-      <version>1.26.1</version>
-    </dependency>
-    <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>42.7.14</version>
-    </dependency>
-    <dependency>
-      <groupId>net.raphimc</groupId>
-      <artifactId>MinecraftAuth</artifactId>
-      <version>5.0.2</version>
     </dependency>
   </dependencies>
 

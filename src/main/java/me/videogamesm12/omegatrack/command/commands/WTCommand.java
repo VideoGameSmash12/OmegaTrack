@@ -17,7 +17,7 @@ public class WTCommand extends AbstractOmegaTrackCommand
     {
         sender.getBot().sendResponse("Traditional ID #" + this.omegaTrack.wiretap.getCurrentTraditionalId()
                 + ". Backwards ID #" + this.omegaTrack.wiretap.getCurrentBackwardsId() + ". "
-                + this.omegaTrack.wiretap.getUuids().size() + " player(s) have been indexed.", sender.getMsgSender());
+                + this.omegaTrack.wiretap.getUuids().size() + " player(s) have been indexed.", sender.getUuid().toString());
     }
 
     @Override

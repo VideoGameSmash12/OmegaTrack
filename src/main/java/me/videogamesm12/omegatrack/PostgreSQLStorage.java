@@ -99,9 +99,9 @@ public class PostgreSQLStorage extends Thread
         statement.setDouble(4, set.getX());
         statement.setDouble(5, set.getZ());
         //--
-        System.out.println("Executing update");
+        //System.out.println("Executing update");
         statement.executeUpdate();
-        System.out.println("Execute completed");
+        //System.out.println("Execute completed");
     }
 
     public void dropCoordinatesByUuid(UUID uuid) throws SQLException

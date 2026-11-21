@@ -16,7 +16,7 @@ public class ResetCommand extends AbstractOmegaTrackCommand
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
         this.omegaTrack.wiretap.resetBruteforcer(0);
-        sender.getBot().sendResponse("Okay, I've reset the bruteforcer for you.", sender.getMsgSender());
+        sender.getBot().sendResponse("Okay, I've reset the bruteforcer for you.", sender.getUuid().toString());
     }
 
     @Override

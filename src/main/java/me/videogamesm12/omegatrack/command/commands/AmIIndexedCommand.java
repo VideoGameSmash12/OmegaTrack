@@ -25,7 +25,7 @@ public class AmIIndexedCommand extends AbstractOmegaTrackCommand
         final String result = this.omegaTrack.wiretap.getUuids().containsKey(sender.getUuid()) ?
                 "Yes, you are indexed." : "No, you are not currently indexed.";
 
-        sender.getBot().sendResponse(result, sender.getMsgSender());
+        sender.getBot().sendResponse(result, sender.getUuid().toString());
     }
 
     @Override
