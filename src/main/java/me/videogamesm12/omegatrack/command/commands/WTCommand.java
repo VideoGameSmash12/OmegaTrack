@@ -16,8 +16,12 @@ public class WTCommand extends AbstractOmegaTrackCommand
     public void executeChat(ChatSender sender, String args) throws CommandException
     {
         sender.getBot().sendResponse("Traditional ID #" + this.omegaTrack.wiretap.getCurrentTraditionalId()
-                + ". Backwards ID #" + this.omegaTrack.wiretap.getCurrentBackwardsId() + ". "
-                + this.omegaTrack.wiretap.getUuids().size() + " player(s) have been indexed.", sender.getUuid().toString());
+                + ". Traditional backwards ID #" + this.omegaTrack.wiretap.getCurrentTraditionalBackwardsId()
+                + ". Backwards ID #" + this.omegaTrack.wiretap.getCurrentBackwardsId()
+                + ". ",
+                sender.getUuid().toString());
+        sender.getBot().sendResponse(this.omegaTrack.wiretap.getUuids().size() + " player(s) have been indexed.",
+                sender.getUuid().toString());
     }
 
     @Override

@@ -21,7 +21,6 @@ import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
 import org.geysermc.mcprotocollib.network.event.session.SessionAdapter;
 import org.geysermc.mcprotocollib.network.factory.ClientNetworkSessionFactory;
 import org.geysermc.mcprotocollib.network.packet.Packet;
-import org.geysermc.mcprotocollib.network.session.ClientNetworkSession;
 import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundChatPacket;
@@ -377,7 +376,9 @@ public class EpsilonBot {
 			commandList.add(new WTCommand(this.omegaTrack));
 			commandList.add(new SetOffsetCommand(this.omegaTrack));
 			commandList.add(new OmegaTrackCommand()); // This one doesn't depend on OmegaTrack, so it is just a regular Epsilon ChatCommand
-			commandList.add(new AmIIndexedCommand(this.omegaTrack));
+			commandList.add(new LinkedCommand(this.omegaTrack));
+			commandList.add(new LinkCommand(this.omegaTrack));
+			commandList.add(new UnlinkCommand(this.omegaTrack));
 		}
 		// OmegaTrack stop
 

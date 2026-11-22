@@ -81,7 +81,6 @@ public class Wiretap extends SessionAdapter
             }
         }, 0, 5000 * 60);
 
-
         // Sets up entity brute-forcing if we are not using Delta communication
         /*
         if (!OTConfig.INSTANCE.getGeneral().isUsingDeltaCommunication())
@@ -414,12 +413,12 @@ public class Wiretap extends SessionAdapter
         // Traditional forwards brute-forcing - This takes the offset and starts brute-forcing entity IDs starting at
         //  that number. On start-up by default it starts at 0 just in case the server restarted.
         this.traditionalTimerTask = new TraditionalTimerTask(this);
-        this.timer.schedule(this.traditionalTimerTask, 0, 100);
+        this.timer.schedule(this.traditionalTimerTask, 0, 50);
 
         // Traditional backwards brute-forcing - Usually on start-up this doesn't do anything but if the offset is set
         //  via the command, this takes the offset and then starts brute-forcing IDs in the opposite direction.
         this.traditionalBackwardsTimerTask = new TraditionalBackwardsTimerTask(this);
-        this.timer.schedule(this.traditionalBackwardsTimerTask, 0, 100);
+        this.timer.schedule(this.traditionalBackwardsTimerTask, 0, 50);
     }
 
     public boolean isLinked(UUID uuid)
@@ -453,5 +452,13 @@ public class Wiretap extends SessionAdapter
     public void unlink(UUID uuid)
     {
         uuids.remove(uuid);
+    }
+
+    public void unlink(int id)
+    {
+        uuids.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(id))
+                .map(Map.Entry::getKey)
+                .findAny().ifPresent(uuids::remove);
     }
 }
