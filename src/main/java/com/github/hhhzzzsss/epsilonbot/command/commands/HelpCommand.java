@@ -37,7 +37,7 @@ public class HelpCommand extends ChatCommand {
             sb.append("Commands -");
             for (Command command : bot.getCommandList().getCommands()) {
                 if (command instanceof ChatCommand && command.getPermission() <= sender.getPermission()) {
-                    sb.append(" " + Config.getConfig().getCommandPrefix() + command.getName());
+                    sb.append(" " + command.getName());
                 }
             }
             bot.sendResponse(sb.toString(), sender.getUuid().toString());

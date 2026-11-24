@@ -23,7 +23,7 @@ public class LinkedCommand extends AbstractOmegaTrackCommand
     {
         final String[] args = arg.split(" ");
 
-        if (args.length == 0)
+        if (args.length == 1 && args[0].isEmpty())
         {
             if (sender.getUuid().equals(UUIDUtil.SYSTEM_UUID))
             {

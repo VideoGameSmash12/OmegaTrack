@@ -23,10 +23,6 @@ public class Config {
     String username;
     String password;
     String authType = "offline";
-    String commandPrefix = "`";
-    ArrayList<String> alternatePrefixes;
-    String staffKey = "";
-    String trustedKey = "";
     ArrayList<String> trusted;
     boolean nonPMCommandsEnabled;
 

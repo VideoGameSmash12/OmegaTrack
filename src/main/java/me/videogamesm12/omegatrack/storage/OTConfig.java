@@ -2,6 +2,7 @@ package me.videogamesm12.omegatrack.storage;
 
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import lombok.Data;
 import lombok.Getter;
 
@@ -11,7 +12,9 @@ import java.nio.charset.StandardCharsets;
 @Data
 public class OTConfig
 {
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .create();
     //--
     public static OTConfig INSTANCE;
 
