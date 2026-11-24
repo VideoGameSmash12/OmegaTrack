@@ -1,12 +1,9 @@
 package com.github.hhhzzzsss.epsilonbot.modules;
 
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
-import com.github.hhhzzzsss.epsilonbot.Logger;
 import com.github.hhhzzzsss.epsilonbot.listeners.DisconnectListener;
 import com.github.hhhzzzsss.epsilonbot.listeners.PacketListener;
 import com.github.hhhzzzsss.epsilonbot.util.ChatUtils;
-import lombok.Getter;
-import lombok.Setter;
 import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
 import org.geysermc.mcprotocollib.network.packet.Packet;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundDisguisedChatPacket;
@@ -14,49 +11,54 @@ import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.Clientbound
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerChatPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundSystemChatPacket;
 
-public class ChatLogger implements PacketListener, DisconnectListener {
+public class ChatLogger implements PacketListener, DisconnectListener
+{
 	private final EpsilonBot bot;
-	@Getter @Setter private boolean writeToFile;
-	
-	public ChatLogger(EpsilonBot bot, boolean writeToFile) {
+
+	public ChatLogger(EpsilonBot bot)
+	{
 		this.bot = bot;
-		this.writeToFile = writeToFile;
 	}
 
 	@Override
-	public void onPacket(Packet packet) {
-		if (packet instanceof ClientboundLoginPacket) {
-			log(String.format("Successfully logged in to %s:%d", bot.getHost(), bot.getPort()));
+	public void onPacket(Packet packet)
+	{
+		if (packet instanceof ClientboundLoginPacket)
+		{
+			EpsilonBot.getLogger().info("Successfully logged into {}:{}", bot.getHost(), bot.getPort());
 		}
-		else if (packet instanceof ClientboundSystemChatPacket) {
-			ClientboundSystemChatPacket t_packet = (ClientboundSystemChatPacket) packet;
-			String fullText = ChatUtils.getFullText(t_packet.getContent());
-			if (fullText.equals("") || fullText.startsWith("Command set: ")) {
+		else if (packet instanceof ClientboundSystemChatPacket system)
+		{
+            String fullText = ChatUtils.getFullText(system.getContent());
+			if (fullText.isEmpty() || fullText.startsWith("Command set: "))
+			{
 				return;
 			}
-			log(fullText);
+			EpsilonBot.getLogger().info(fullText);
 		}
-		else if (packet instanceof ClientboundDisguisedChatPacket) {
-			ClientboundDisguisedChatPacket t_packet = (ClientboundDisguisedChatPacket) packet;
-			log(ChatUtils.getFullText(t_packet.getMessage()));
+		else if (packet instanceof ClientboundDisguisedChatPacket disguised)
+		{
+            EpsilonBot.getLogger().info(ChatUtils.getFullText(disguised.getMessage()));
 		}
-		else if (packet instanceof ClientboundPlayerChatPacket) {
-			ClientboundPlayerChatPacket t_packet = (ClientboundPlayerChatPacket) packet;
-			if (t_packet.getUnsignedContent() != null) {
-				log(ChatUtils.getFullText(t_packet.getUnsignedContent()));
-			} else {
-				log("<" + ChatUtils.getFullText(t_packet.getName()) + "> " + t_packet.getContent());
+		else if (packet instanceof ClientboundPlayerChatPacket chat)
+		{
+            if (chat.getUnsignedContent() != null)
+			{
+				EpsilonBot.getLogger().info(ChatUtils.getFullText(chat.getUnsignedContent()));
+			} else
+			{
+                EpsilonBot.getLogger().info("<{}> {}", ChatUtils.getFullText(chat.getName()), chat.getContent());
 			}
 		}
 	}
 
 	@Override
-	public void onDisconnected(DisconnectedEvent packet) {
-		log("Disconnected: " + packet.getReason());
-	}
-	
-	public void log(String fullText) {
-		System.out.println(fullText);
-		if (writeToFile) Logger.log(fullText);
+	public void onDisconnected(DisconnectedEvent packet)
+	{
+		EpsilonBot.getLogger().info("Disconnected: {}", packet.getReason());
+		if (packet.getCause() != null)
+		{
+			EpsilonBot.getLogger().error("Uh oh, exception led to us disconnecting", packet.getCause());
+		}
 	}
 }

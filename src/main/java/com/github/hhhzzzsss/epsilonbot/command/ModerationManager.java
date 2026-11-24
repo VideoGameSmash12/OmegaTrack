@@ -1,6 +1,6 @@
 package com.github.hhhzzzsss.epsilonbot.command;
 
-import com.github.hhhzzzsss.epsilonbot.util.ProfileUtils;
+import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.Getter;
@@ -11,11 +11,8 @@ import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class ModerationManager {
     public static final Path STAFF_JSON_PATH = Path.of("staff.json");
@@ -27,13 +24,13 @@ public class ModerationManager {
     static {
         try {
             loadStaffList();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ex) {
+            EpsilonBot.getLogger().error("Failed to load staff list", ex);
         }
         try {
             loadBlacklist();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ex) {
+            EpsilonBot.getLogger().error("Failed to load blacklist", ex);
         }
     }
 
@@ -63,15 +60,6 @@ public class ModerationManager {
     public static boolean isStaff(UUID uuid) {
         return staffList.contains(uuid);
     }
-
-    public static List<String> getStaffNames() {
-        return ProfileUtils.parallelNameQuery(new ArrayList<>(staffList))
-                .stream()
-                .map((name) -> name == null ? "(error retreiving name)" : name)
-                .collect(Collectors.toList());
-    }
-
-
 
     public static void loadBlacklist() throws IOException {
         if (Files.exists(BLACKLIST_JSON_PATH)) {

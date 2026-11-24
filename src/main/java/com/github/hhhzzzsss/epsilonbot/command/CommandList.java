@@ -1,5 +1,6 @@
 package com.github.hhhzzzsss.epsilonbot.command;
 
+import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import lombok.NoArgsConstructor;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -51,8 +52,8 @@ public class CommandList {
 						commandMap.get(entry.getKey()).setPermission(entry.getValue());
 					}
 				}
-			} catch (Throwable e) {
-				e.printStackTrace();
+			} catch (Throwable ex) {
+				EpsilonBot.getLogger().error("Failed to load command permissions from file", ex);
 			}
 		}
 	}
@@ -67,8 +68,8 @@ public class CommandList {
 			Yaml yaml = new Yaml(options);
 			FileWriter writer = new FileWriter(permissionsFile);
 			yaml.dump(obj, writer);
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException ex) {
+			EpsilonBot.getLogger().error("Failed to save command permissions to file", ex);
 		}
 	}
 }

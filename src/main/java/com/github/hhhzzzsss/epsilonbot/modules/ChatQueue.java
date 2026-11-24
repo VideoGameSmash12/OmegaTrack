@@ -66,7 +66,6 @@ public class ChatQueue implements TickListener, PacketListener {
 				} else {
 					chatQueue.add(chatPiece.substring(0, 256));
 				}
-				System.out.println(m.group(1));
 			}
 		}
 	}
@@ -102,7 +101,6 @@ public class ChatQueue implements TickListener, PacketListener {
 				} else {
 					chatQueue.add(chatPiece.substring(0, 256));
 				}
-				System.out.println(m.group(1));
 			}
 		}
 	}

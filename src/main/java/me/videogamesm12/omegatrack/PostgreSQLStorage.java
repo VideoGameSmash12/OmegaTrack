@@ -1,5 +1,6 @@
 package me.videogamesm12.omegatrack;
 
+import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import lombok.Getter;
 import me.videogamesm12.omegatrack.data.PositionDataset;
 import me.videogamesm12.omegatrack.storage.OTConfig;
@@ -37,12 +38,10 @@ public class PostgreSQLStorage extends Thread
     {
         try
         {
-            System.out.println("Connecting to " + String.format(
-                    "jdbc:postgresql://%s:%s/%s",
+            EpsilonBot.getLogger().info("Connecting to jdbc:postgresql://{}:{}/{}",
                     OTConfig.INSTANCE.getSql().getIp(),
                     OTConfig.INSTANCE.getSql().getPort(),
-                    OTConfig.INSTANCE.getSql().getDatabase()
-            ));
+                    OTConfig.INSTANCE.getSql().getDatabase());
             Class.forName("org.postgresql.Driver");
             connection = DriverManager.getConnection(
                     String.format(
@@ -56,7 +55,8 @@ public class PostgreSQLStorage extends Thread
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
+            EpsilonBot.getLogger().error("Unable to connect to PostgreSQL database", ex);
+            return;
         }
 
         // Sets up the queue now
@@ -78,7 +78,7 @@ public class PostgreSQLStorage extends Thread
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
+            EpsilonBot.getLogger().warn("Failed to cancel operations and close the connection", ex);
         }
         super.interrupt();
     }
@@ -99,9 +99,7 @@ public class PostgreSQLStorage extends Thread
         statement.setDouble(4, set.getX());
         statement.setDouble(5, set.getZ());
         //--
-        //System.out.println("Executing update");
         statement.executeUpdate();
-        //System.out.println("Execute completed");
     }
 
     public void dropCoordinatesByUuid(UUID uuid) throws SQLException

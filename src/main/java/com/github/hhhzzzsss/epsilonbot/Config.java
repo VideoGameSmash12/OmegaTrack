@@ -36,8 +36,8 @@ public class Config {
             InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream("default-config.yml");
             try {
                 Files.copy(is, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException ex) {
+                EpsilonBot.getLogger().error("Failed to copy EpsilonBot configuration from defaults", ex);
             }
             IOUtils.closeQuietly(is);
         }
@@ -51,8 +51,8 @@ public class Config {
         try {
             is = new FileInputStream(file);
             config = yaml.load(is);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        } catch (FileNotFoundException ex) {
+            EpsilonBot.getLogger().error("Could not find configuration file, wtf?", ex);
         }
     }
 }

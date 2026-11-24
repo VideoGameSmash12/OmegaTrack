@@ -35,8 +35,10 @@ public class UnblacklistCommand extends ChatCommand {
     }
 
     @Override
-    public void executeChat(ChatSender sender, String args) throws CommandException {
-        if (args.length() == 0) {
+    public void executeChat(ChatSender sender, String args) throws CommandException
+    {
+        if (args.length() == 0)
+        {
             throw new CommandException("Please specify a username");
         }
 

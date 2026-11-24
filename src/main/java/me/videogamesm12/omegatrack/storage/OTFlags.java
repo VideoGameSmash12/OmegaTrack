@@ -34,7 +34,7 @@ public class OTFlags
             }
             catch (Exception ex)
             {
-                ex.printStackTrace();
+                EpsilonBot.getLogger().error("Failed to load OmegaTrack flags", ex);
             }
         }
 
@@ -65,9 +65,8 @@ public class OTFlags
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
-            this.epsilonBot.getChatLogger().log("Here's what was in memory that couldn't be saved:");
-            this.epsilonBot.getChatLogger().log(GSON.toJson(this));
+            EpsilonBot.getLogger().error("Failed to save OmegaTrack flags", ex);
+            EpsilonBot.getLogger().error("Data that couldn't be saved: {}", GSON.toJson(this));
         }
     }
 

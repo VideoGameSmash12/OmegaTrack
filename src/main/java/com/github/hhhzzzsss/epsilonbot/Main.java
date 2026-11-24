@@ -2,7 +2,8 @@ package com.github.hhhzzzsss.epsilonbot;
 
 import java.util.concurrent.TimeUnit;
 
-public class Main {
+public class Main
+{
     private static EpsilonBot bot = new EpsilonBot();
 
     public static void main( String[] args )
@@ -11,20 +12,27 @@ public class Main {
     }
 
     public static void restartBot() {
-        try {
+        try
+        {
             bot.awaitTermination(15, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        }
+        catch (InterruptedException ex)
+        {
+            EpsilonBot.getLogger().error("Aborted restart timeout", ex);
         }
         System.exit(0);
     }
 
-    public static void stopBot() {
+    public static void stopBot()
+    {
         if (bot.omegaTrack != null) bot.omegaTrack.flags.save();
-        try {
+        try
+        {
             bot.awaitTermination(15, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        }
+        catch (InterruptedException ex)
+        {
+            EpsilonBot.getLogger().error("Aborted shutdown timeout", ex);
         }
         System.exit(42);
     }

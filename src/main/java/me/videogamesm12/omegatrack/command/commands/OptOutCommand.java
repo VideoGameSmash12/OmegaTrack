@@ -1,5 +1,6 @@
 package me.videogamesm12.omegatrack.command.commands;
 
+import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.hhhzzzsss.epsilonbot.command.ChatSender;
 import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import me.videogamesm12.omegatrack.OmegaTrack;
@@ -30,10 +31,10 @@ public class OptOutCommand extends AbstractOmegaTrackCommand
             sender.getBot().sendCommand("/tell " + sender.getUuid() + " Deleting coordinate data connected to you...");
             this.omegaTrack.storage.dropCoordinatesByUuid(sender.getUuid());
         }
-        catch (SQLException e)
+        catch (SQLException ex)
         {
+            EpsilonBot.getLogger().error("Failed to delete coordinate data for {}", sender.getUuid(), ex);
             sender.getBot().sendCommand("/tell " + sender.getUuid() + " There was a problem whilst trying to delete coordinate data connected to you. Please contact the maintainer of this bot (videogamesm12) &oimmediately&f.");
-            e.printStackTrace();
         }
 
         this.omegaTrack.wiretap.unlink(sender.getUuid());

@@ -22,6 +22,7 @@ public class ProfileUtils {
         UUID uuid = null;
         String username = null;
     }
+
     public static PlayerProfileResponse getPlayerProfile(String identifier) throws IOException, NoSuchAlgorithmException, KeyManagementException {
         URL url = new URL("https://api.ashcon.app/mojang/v2/user/" + identifier);
         InputStreamReader isr = new InputStreamReader(DownloadUtils.DownloadToOutputStream(url, 1024*1024));
@@ -36,32 +37,4 @@ public class ProfileUtils {
         }
         return response;
     }
-
-    @RequiredArgsConstructor
-    private static class NameQueryThread extends Thread {
-        private final UUID uuid;
-        @Getter String result = null;
-
-        @Override
-        public void run() {
-            System.out.println("run() called");
-            try {
-                result = ProfileUtils.getPlayerProfile(uuid.toString()).getUsername();
-            } catch (Exception e) {}
-        }
-    }
-    public static List<String> parallelNameQuery(List<UUID> uuids) {
-        System.out.println("parallelNameQuery() called");
-        List<NameQueryThread> threads = uuids.stream().map((uuid) -> new NameQueryThread(uuid)).collect(Collectors.toList());
-        for (NameQueryThread thread : threads) {
-            thread.start();
-        }
-        for (NameQueryThread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {}
-        }
-        return threads.stream().map((thread) -> thread.getResult()).collect(Collectors.toList());
-    }
-
 }

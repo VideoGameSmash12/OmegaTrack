@@ -1,11 +1,9 @@
 package me.videogamesm12.omegatrack;
 
 import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
-import com.github.hhhzzzsss.epsilonbot.Logger;
 import me.videogamesm12.omegatrack.data.PositionDataset;
 import me.videogamesm12.omegatrack.tasks.tracker.TrackerTask;
 import me.videogamesm12.omegatrack.util.UUIDUtil;
-import org.cloudburstmc.nbt.NbtList;
 import org.cloudburstmc.nbt.NbtType;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.event.session.SessionAdapter;
@@ -77,7 +75,7 @@ public class Tracker extends SessionAdapter
             }
 
             // Record the data
-            System.out.println("Sending " + uuid + " to database");
+            EpsilonBot.getLogger().debug("Queueing data for {}", uuid);
             try
             {
                 // Queues the dataset to be sent to the database
@@ -85,7 +83,7 @@ public class Tracker extends SessionAdapter
             }
             catch (Throwable ex)
             {
-                ex.printStackTrace();
+                EpsilonBot.getLogger().error("Failed to queue data for user {}", uuid, ex);
             }
         }
     }

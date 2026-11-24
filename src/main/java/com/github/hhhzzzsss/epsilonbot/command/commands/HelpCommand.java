@@ -32,7 +32,6 @@ public class HelpCommand extends ChatCommand {
 
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException {
-        String prefix = bot.getChatCommandHandler().getPrefix();
         if (args.length() == 0) { // List commands
             StringBuilder sb = new StringBuilder();
             sb.append("Commands -");
@@ -51,7 +50,7 @@ public class HelpCommand extends ChatCommand {
             if (command.getPermission() > 0) {
                 sb.append("[RESTRICTED] ");
             }
-            sb.append(String.format("%s%s ", prefix, command.getName()));
+            sb.append(command.getName()).append(" ");
             if (command.getSyntax().length == 0) {
                 sb.append(String.format("- %s", command.getDescription()));
             }
@@ -61,7 +60,7 @@ public class HelpCommand extends ChatCommand {
             else {
                 sb.append(String.format("- %s", command.getDescription()));
                 for (String syntax : command.getSyntax()) {
-                    sb.append(String.format("\n%s%s %s", prefix, command.getName(), syntax));
+                    sb.append(String.format("\n%s %s", command.getName(), syntax));
                 }
             }
             if (command.getFlags().length > 0) {

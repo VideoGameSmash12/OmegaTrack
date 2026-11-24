@@ -173,7 +173,7 @@ public class StateManager implements PacketListener, TickListener, DisconnectLis
 			nextRectifyTime += commandDelay;
 		}
 		if (isTotalFreedom && autoWorld && !worldName.asString().equals(targetWorld)) {
-			bot.sendCommand("/world " + targetWorld.replace("minecraft:", ""));
+			bot.sendCommand("/warp flatlands");
 		}
 	}
 }

@@ -5,40 +5,26 @@ import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.github.hhhzzzsss.epsilonbot.command.*;
 import com.github.hhhzzzsss.epsilonbot.listeners.PacketListener;
 import com.github.hhhzzzsss.epsilonbot.util.ChatUtils;
-import com.github.hhhzzzsss.epsilonbot.util.HashUtils;
-import com.mojang.brigadier.CommandDispatcher;
-import lombok.Getter;
 import lombok.NonNull;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import org.apache.commons.lang3.ArrayUtils;
 import org.geysermc.mcprotocollib.network.packet.Packet;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundDisguisedChatPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerChatPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundSystemChatPacket;
 
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ChatCommandHandler implements PacketListener
 {
 	private final EpsilonBot bot;
 	private final CommandList commandList;
-	@Getter private String prefix;
-	@Getter private ArrayList<String> alternatePrefixes;
-	@Getter private Pattern prefixPattern;
-	@Getter private Pattern commandPattern;
-	@Getter private Pattern msgCommandPattern;
-	@Getter private Pattern chatCommandPattern;
-	@Getter private Pattern discordCommandPattern;
 
-	public ChatCommandHandler(EpsilonBot bot, CommandList commandList, String prefix, ArrayList<String> alternatePrefixes) {
+	public ChatCommandHandler(EpsilonBot bot, CommandList commandList)
+	{
 		this.bot = bot;
 		this.commandList = commandList;
-		this.setPrefix(prefix, alternatePrefixes);
 	}
 
 	private void handleFullChat(Component message) {
@@ -48,12 +34,13 @@ public class ChatCommandHandler implements PacketListener
 		if (message instanceof TextComponent && ChatUtils.isEssentialsMessage(strMessage))
 		{
 			final String[] nameAndMessage = ChatUtils.readEssentialsMessage(strMessage);
-			final UUID uuid = nameAndMessage[0].startsWith("~") ?
+			final UUID uuid = nameAndMessage[0].contains("~") ?
 					bot.getPlayerListTracker().getPlayerList().entrySet()
 							.stream()
 							.filter(entry ->
-                                    nameAndMessage[0].equals(ChatUtils.getFullText(entry.getValue().getDisplayName())
-                                            .replaceAll("§[0-9a-fklmnor]", "")))
+                                    ChatUtils.getFullText(entry.getValue().getDisplayName())
+                                            .replaceAll("§[0-9a-fklmnor]", "")
+											.endsWith(nameAndMessage[0]))
 							.findAny()
 							.map(Map.Entry::getKey)
 							.orElse(null):
@@ -61,7 +48,7 @@ public class ChatCommandHandler implements PacketListener
 
 			if (uuid == null)
 			{
-				System.out.println("Unable to find player list entry for " + nameAndMessage[0]);
+				EpsilonBot.getLogger().warn("Unable to find player list entry for sender {}", nameAndMessage[0]);
 				return;
 			}
 
@@ -149,23 +136,5 @@ public class ChatCommandHandler implements PacketListener
 		}
 
 		cmd.executeChat(new ChatSender(bot, uuid, username, permission), String.join(" ", arguments));
-	}
-
-	/**
-	 * Sets the prefix and compiles a new command pattern using this prefix
-	 *
-	 * @param prefix The command prefix
-	 */
-	public void setPrefix(String prefix, ArrayList<String> alternatePrefixes) {
-		ArrayList<String> allPrefixes = new ArrayList<>();
-		allPrefixes.add(prefix);
-		allPrefixes.addAll(alternatePrefixes);
-		String prefixMatchingString = String.join("|", allPrefixes);
-
-		prefixPattern = Pattern.compile(prefixMatchingString);
-		commandPattern = Pattern.compile(String.format("((?:%s)\\S+)(.*)?", prefixMatchingString));
-		msgCommandPattern = Pattern.compile(String.format("\\| (\\S+) \\((.+?)\\) > You: ((?:%s)\\S+)(.*)?", prefixMatchingString)); // obsolete
-		chatCommandPattern = Pattern.compile(String.format("(.*(\\S+)\\s*(?: »|:) )+((?:%s)\\S+)(.*)?", prefixMatchingString));
-		discordCommandPattern = Pattern.compile(String.format("(\\[Discord\\] .*: )((?:`)\\S+)(.*)?(.*)?", prefixMatchingString)); // discord format no longer uses colon, but now this is covered by the chat command pattern
 	}
 }

@@ -25,6 +25,8 @@ import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundChatPacket;
 import org.geysermc.mcprotocollib.protocol.packet.login.clientbound.ClientboundLoginFinishedPacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -34,6 +36,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class EpsilonBot {
+	// OmegaTrack start - Add SLF4J logger
+	@Getter private static final Logger logger = LoggerFactory.getLogger("OmegaTrack");
+	// OmegaTrack stop
+
 	@Getter @Setter private String username;
 	@Getter @Setter private UUID uuid;
 	@Getter private final String host;
@@ -50,32 +56,34 @@ public class EpsilonBot {
 	private ArrayList<DisconnectListener> disconnectListeners = new ArrayList<>();
 	private Queue<Packet> packetQueue = new ConcurrentLinkedQueue<>();
 
-	@Getter protected ChatLogger chatLogger = new ChatLogger(this, true);
+	@Getter protected ChatLogger chatLogger = new ChatLogger(this);
 	@Getter protected ChatQueue chatQueue = new ChatQueue(this);
 	@Getter protected StateManager stateManager = new StateManager(this);
 	@Getter protected CommandList commandList = new CommandList();
-	@Getter protected ChatCommandHandler chatCommandHandler = new ChatCommandHandler(this, commandList, Config.getConfig().commandPrefix, Config.getConfig().getAlternatePrefixes());
+	@Getter protected ChatCommandHandler chatCommandHandler = new ChatCommandHandler(this, commandList);
 	@Getter protected PlayerListTracker playerListTracker = new PlayerListTracker();
 
 	// OmegaTrack start - Necessary hooks to be able to get the bot instance anytime
 	public OmegaTrack omegaTrack;
 	// OmegaTrack stop
 
-	public EpsilonBot() {
+	public EpsilonBot()
+	{
 		this.host = Config.getConfig().getHost();
 		this.port = Config.getConfig().getPort();
 		try
 		{
 			this.omegaTrack = new OmegaTrack(this);
-		} catch (StartFailureException e)
+		}
+		catch (StartFailureException ex)
 		{
-			System.err.println("Failed to load OmegaTrack");
-			e.printStackTrace();
+			logger.error("Failed to start OmegaTrack", ex);
 		}
 		loadCommands();
 	}
 	
-	public void start() {
+	public void start()
+	{
 		getListeners();
 		scheduleTicking();
 		connect();
@@ -83,13 +91,14 @@ public class EpsilonBot {
 		if (this.omegaTrack != null) this.omegaTrack.start();
 	}
 	
-	private void connect() {
+	private void connect()
+	{
 		MinecraftProtocol protocol;
 		try {
 			protocol = Auth.login(Config.getConfig().getUsername());
-			System.out.println("Successfully authenticated user.");
-		} catch (Throwable e) {
-			chatLogger.log("Error: failed to authenticate user - " + e.getMessage() + ". Restarting...");
+			logger.info("Successfully authenticated user.");
+		} catch (Throwable ex) {
+			logger.info("Failed to authenticate user", ex);
 			Main.restartBot();
 			return;
 		}
@@ -117,28 +126,36 @@ public class EpsilonBot {
 	}
 
 	// loop through the fields of the class and all of its superclasses up until the Bot class
-	private void getListeners() {
+	private void getListeners()
+	{
 		Class<?> c = this.getClass();
-		do {
-			for (Field field : c.getDeclaredFields()) {
+		do
+		{
+			for (Field field : c.getDeclaredFields())
+			{
 				field.setAccessible(true);
 				Object value;
-				try {
+				try
+				{
 					value = field.get(this);
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					System.err.println("Error when accesing field: " + field.getName());
-					e.printStackTrace();
+				}
+				catch (IllegalArgumentException | IllegalAccessException ex)
+				{
+					logger.error("Error when accessing field: {}", field.getName(), ex);
 					continue;
 				}
 				field.setAccessible(false);
 				
-				if (value instanceof PacketListener) {
+				if (value instanceof PacketListener)
+				{
 					packetListeners.add((PacketListener) value);
 				}
-				if (value instanceof TickListener) {
+				if (value instanceof TickListener)
+				{
 					tickListeners.add((TickListener) value);
 				}
-				if (value instanceof DisconnectListener) {
+				if (value instanceof DisconnectListener)
+				{
 					disconnectListeners.add((DisconnectListener) value);
 				}
 			}
@@ -146,188 +163,232 @@ public class EpsilonBot {
 		} while (EpsilonBot.class.isAssignableFrom(c));
 	}
 	
-	private void scheduleTicking() {
-		executor.scheduleAtFixedRate(() -> {
-			try {
+	private void scheduleTicking()
+	{
+		executor.scheduleAtFixedRate(() ->
+		{
+			try
+			{
 				processTick();
 			}
-			catch (Throwable e) {
-				e.printStackTrace();
+			catch (Throwable ex)
+			{
+				logger.error("Tick failed", ex);
 			}
 		}, 0, 50, TimeUnit.MILLISECONDS);
 	}
 
 	// Packets are processed at the beginning of ticks
-	private void processTick() {
+	private void processTick()
+	{
 		int queueLength = packetQueue.size();
-		for (int i=0; i<queueLength; i++) {
+		for (int i=0; i<queueLength; i++)
+		{
 			processPacket(packetQueue.poll());
 		}
 		
-		if (loggedIn) {
-			for (TickListener listener : tickListeners) {
-				try {
+		if (loggedIn)
+		{
+			for (TickListener listener : tickListeners)
+			{
+				try
+				{
 					listener.onTick();
 				}
-				catch (Throwable e) {
-					e.printStackTrace();
+				catch (Throwable ex)
+				{
+					logger.error("Tick listener threw an exception", ex);
 				}
 			}
 		}
 	}
 	
-	public interface PacketFuture {
+	public interface PacketFuture
+	{
 		boolean onPacket(Packet p);
 	}
 	
 	@AllArgsConstructor
-	private class ExpirablePacketFuture implements PacketFuture {
+	private class ExpirablePacketFuture implements PacketFuture
+	{
 		private PacketFuture future;
 		private long expiration;
+
 		@Override
-		public boolean onPacket(Packet packet) {
-			if (System.currentTimeMillis() < expiration) {
+		public boolean onPacket(Packet packet)
+		{
+			if (System.currentTimeMillis() < expiration)
+			{
 				return future.onPacket(packet);
 			}
-			else {
+			else
+			{
 				return false;
 			}
 		}
 	}
 	
 	public List<PacketFuture> packetFutures = new LinkedList<>();
-	private void processPacket(Packet packet) {
-		if (packet instanceof ClientboundLoginFinishedPacket login) {
+
+	private void processPacket(Packet packet)
+	{
+		if (packet instanceof ClientboundLoginFinishedPacket login)
+		{
 			uuid = login.getProfile().getId();
-		} else if (packet instanceof ClientboundLoginPacket) {
+		}
+		else if (packet instanceof ClientboundLoginPacket)
+		{
 			loggedIn = true;
 		}
 
-		for (PacketListener listener : packetListeners) {
-			try {
+		for (PacketListener listener : packetListeners)
+		{
+			try
+			{
 				listener.onPacket(packet);
 			}
-			catch (Exception e) {
-				e.printStackTrace();
+			catch (Exception ex)
+			{
+				logger.error("Packet listener threw an exception", ex);
 			}
 		}
-		synchronized (packetFutures) {
+		synchronized (packetFutures)
+		{
 			Iterator<PacketFuture> itr = packetFutures.iterator();
-			while (itr.hasNext()) {
+			while (itr.hasNext())
+			{
 				PacketFuture future = itr.next();
-				if (future.onPacket(packet)) {
+				if (future.onPacket(packet))
+				{
 					itr.remove();
 				}
 			}
 		}
 	}
 	
-	private void processDisconnect(DisconnectedEvent event) {
+	private void processDisconnect(DisconnectedEvent event)
+	{
 		loggedIn = false;
 
-		for (DisconnectListener listener : disconnectListeners) {
-			try {
+		for (DisconnectListener listener : disconnectListeners)
+		{
+			try
+			{
 				listener.onDisconnected(event);
 			}
-			catch (Exception e) {
-				e.printStackTrace();
+			catch (Exception ex)
+			{
+				logger.error("Disconnection listener threw an exception", ex);
 			}
 		}
 		
-		if (autoRelog) {
+		if (autoRelog)
+		{
 			String reason = ChatUtils.getFullText(event.getReason());
 
-			if (reason.contains("Wait 5 seconds before connecting, thanks! :)") || reason.contains("Connection throttled! Please wait before reconnecting.")) {
-				executor.schedule(() -> {
-					connect();
-				}, 5, TimeUnit.SECONDS);
+			if (reason.contains("Wait 5 seconds before connecting, thanks! :)") || reason.contains("Connection throttled! Please wait before reconnecting."))
+			{
+				executor.schedule(this::connect, 5, TimeUnit.SECONDS);
 			}
-			else {
-				executor.schedule(() -> {
-					connect();
-				}, 1, TimeUnit.SECONDS);
+			else
+			{
+				executor.schedule(this::connect, 1, TimeUnit.SECONDS);
 			}
 		}
-		else {
+		else
+		{
 			stop();
 		}
 	}
 	
 	/**
-	 * A thread-safe way to schedule an task that waits for a certain packet event before running.
+	 * A thread-safe way to schedule a task that waits for a certain packet event before running.
 	 * 
 	 * @param future The packet to schedule
 	 */
-	public void schedulePacketFuture(PacketFuture future) {
-		synchronized(packetFutures) {
+	public void schedulePacketFuture(PacketFuture future)
+	{
+		synchronized (packetFutures)
+		{
 			packetFutures.add(future);
 		}
 	}
 	
 	/**
-	 * A thread-safe way to schedule an task that waits for a certain packet event before running.
+	 * A thread-safe way to schedule a task that waits for a certain packet event before running.
 	 * 
 	 * @param future The packet to schedule
 	 */
-	public void schedulePacketFuture(PacketFuture future, long timeout) {
-		synchronized(packetFutures) {
+	public void schedulePacketFuture(PacketFuture future, long timeout)
+	{
+		synchronized (packetFutures)
+		{
 			packetFutures.add(new ExpirablePacketFuture(future, timeout));
 		}
 	}
 	
-	public void sendPacket(Packet packet) {
+	public void sendPacket(Packet packet)
+	{
 		session.send(packet);
 	}
 	
-	public void sendChat(String chat) {
+	public void sendChat(String chat)
+	{
 		chatQueue.sendChat(chat);
 	}
 	
-	public void sendChatAsync(String chat) {
-		executor.submit(() -> {
-			sendChat(chat);
-		});
+	public void sendChatAsync(String chat)
+	{
+		executor.submit(() -> sendChat(chat));
 	}
 
-	public void sendChat(String chat, String format) {
+	public void sendChat(String chat, String format)
+	{
 		chatQueue.sendChat(chat, format);
 	}
 
-	public void sendChatAsync(String chat, String format) {
-		executor.submit(() -> {
-			sendChat(chat, format);
-		});
+	public void sendChatAsync(String chat, String format)
+	{
+		executor.submit(() -> sendChat(chat, format));
 	}
 	
-	public void sendCommand(String command) {
+	public void sendCommand(String command)
+	{
 		chatQueue.sendCommand(command);
 	}
 	
-	public void sendChatInstantly(String chat) {
+	public void sendChatInstantly(String chat)
+	{
 		// TODO: Support chat signatures
 		sendPacket(new ServerboundChatPacket(chat, System.currentTimeMillis(), 0, null, 0, new BitSet(), 0));
 	}
 	
-	public void stop() {
+	public void stop()
+	{
 		running = false;
 		autoRelog = false;
-		try {
+		try
+		{
 			session.disconnect("bye");
 		}
-		catch (Exception e) {
-			e.printStackTrace();
+		catch (Exception ex)
+		{
+			logger.error("Failed to disconnect", ex);
 		}
+
 		// OmegaTrack start - save what we have!
 		if (this.omegaTrack != null) this.omegaTrack.stop();
 		// OmegaTrack stop
 		executor.shutdownNow();
 	}
 
-	public void sendMsg(String message, String targetPlayer) {
+	public void sendMsg(String message, String targetPlayer)
+	{
 		chatQueue.sendMsg(message, targetPlayer);
 	}
 
-	public void sendResponse(String message, String targetPlayer) {
+	public void sendResponse(String message, String targetPlayer)
+	{
 		if (targetPlayer == null) {
 			sendChat(message);
 		} else {
@@ -335,24 +396,30 @@ public class EpsilonBot {
 		}
 	}
 	
-	public void relog() {
-		try {
+	public void relog()
+	{
+		try
+		{
 			session.disconnect("bye");
 		}
-		catch (Exception e) {
-			e.printStackTrace();
+		catch (Exception ex)
+		{
+			logger.error("Failed to relog", ex);
 		}
 	}
 	
-	public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+	public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException
+	{
 		return executor.awaitTermination(timeout, unit);
 	}
 	
-	public String toString() {
+	public String toString()
+	{
 		return String.format("%s (%s|%s:%d)", this.getClass().getName(), username, host, port);
 	}
 
-	private void loadCommands() {
+	private void loadCommands()
+	{
 		commandList.add(new HelpCommand(this));
 		commandList.add(new CreatorCommand(this));
 

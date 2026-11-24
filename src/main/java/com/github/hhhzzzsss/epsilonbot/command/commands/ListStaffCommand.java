@@ -7,6 +7,8 @@ import com.github.hhhzzzsss.epsilonbot.command.CommandException;
 import com.github.hhhzzzsss.epsilonbot.command.ModerationManager;
 import lombok.RequiredArgsConstructor;
 
+import java.util.UUID;
+
 @RequiredArgsConstructor
 public class ListStaffCommand extends ChatCommand {
 
@@ -33,8 +35,9 @@ public class ListStaffCommand extends ChatCommand {
 
     @Override
     public void executeChat(ChatSender sender, String args) throws CommandException {
-        (new Thread(() -> {
-            bot.sendResponse("Current registered staff: " + String.join(", ", ModerationManager.getStaffNames()), sender.getUuid().toString());
-        })).start();
+        bot.sendResponse("Currently registered staff UUIDs: " + String.join(", ",
+                ModerationManager.getStaffList().stream()
+                        .map(UUID::toString)
+                        .toList()), sender.getUuid().toString());
     }
 }

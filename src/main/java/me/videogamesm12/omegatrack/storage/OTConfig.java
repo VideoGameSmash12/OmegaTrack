@@ -1,5 +1,6 @@
 package me.videogamesm12.omegatrack.storage;
 
+import com.github.hhhzzzsss.epsilonbot.EpsilonBot;
 import com.google.gson.Gson;
 import lombok.Data;
 import lombok.Getter;
@@ -26,7 +27,7 @@ public class OTConfig
             }
             catch (Exception ex)
             {
-                ex.printStackTrace();
+                EpsilonBot.getLogger().error("Failed to load OmegaTrack configuration, copying defaults", ex);
                 copyDefaults();
             }
         }
@@ -46,7 +47,7 @@ public class OTConfig
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
+            EpsilonBot.getLogger().error("Failed to write OmegaTrack configuration", ex);
         }
     }
 
